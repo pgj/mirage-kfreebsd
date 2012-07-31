@@ -1,3 +1,3 @@
 <syntax/*>: build_syntax
-not <syntax/*>: use_syntax
+not <syntax/*>: use_syntax, use_custom_stdlib
 true: camlp4of

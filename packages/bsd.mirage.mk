@@ -1,24 +1,25 @@
 
-.if !defined(KAMLROOT)
-.error KAMLROOT must be specified.
+.if !defined(STDLIBDIR)
+.error STDLIBDIR must be specified.
 .endif
 
-KAML_BIN?=	${KAMLROOT}/bin
-KAML_LIB?=	${KAMLROOT}/lib/ocaml
-KAML_P4LIB?=	${KAML_LIB}/camlp4
-KAML_SITELIB?=	${KAML_LIB}/site-lib
+CAMLROOT?=	/usr/local
+CAML_BIN?=	${CAMLROOT}/bin
+CAML_LIB?=	${CAMLROOT}/lib/ocaml
+CAML_P4LIB?=	${CAML_LIB}/camlp4
+CAML_SITELIB?=	${CAML_LIB}/site-lib
 
-OCAMLC=		ocamlc -nostdlib -I ${KAML_LIB} -I ${KAML_P4LIB} ${DEPLIBS}
-OCAMLOPT=	ocamlopt -nostdlib -I ${KAML_LIB} -I ${KAML_P4LIB} -nodynlink -fno-PIC ${DEPLIBS}
-OCAMLBUILD=	ocamlbuild -no-stdlib -no-plugin -ocamlc "${OCAMLC}" -ocamlopt "${OCAMLOPT}"
+OCAMLC=		ocamlc.opt ${DEPLIBS}
+OCAMLOPT=	ocamlopt.opt -nodynlink -fno-PIC ${DEPLIBS}
+OCAMLBUILD=	ocamlbuild -ocamlc "${OCAMLC}" -ocamlopt "${OCAMLOPT}"
 
 .if defined(LIBNAME)
 
-COBJS?=		# nada
-DESTDIR?=	${KAML_SITELIB}/${LIBNAME}
-DEPS?=		# nada
+DESTDIR?=	${CAML_SITELIB}/${LIBNAME}
 
-DEPLIBS=	${DEPS:M*:S|^|-I ${KAML_SITELIB}/|}
+.if !empty(DEPS)
+DEPLIBS=	${DEPS:M*:S|^|-I ${CAML_SITELIB}/|}
+.endif
 
 CMIS=		${SRCS:M*.ml:S/.ml$/.cmi/}
 CMXS=		${SRCS:M*.ml:S/.ml$/.cmx/}
@@ -44,16 +45,16 @@ ${MLOBJS}:
 install: all
 	mkdir -p ${DESTDIR}
 	cp ${MLOBJS} ${DESTDIR}
-.if ${COBJS} != ""
+.if !empty(${COBJS})
 	cp ${COBJS} ${DESTDIR}
 .endif
 
 deinstall:
-	rm -rf ${KAML_SITELIB}/${LIBNAME}
+	rm -rf ${CAML_SITELIB}/${LIBNAME}
 
 clean::
 	rm -rf _build
-.if ${COBJS} != ""
+.if !empty(${COBJS})
 	rm -rf ${COBJS}
 .endif
 

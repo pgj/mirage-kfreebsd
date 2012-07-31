@@ -6,21 +6,21 @@ KMOD = mirage
 
 # caml begins here
 
-CAMLP4=		${KAML_BIN}/camlp4o -I ${KAML_LIB} -I ${KAML_P4LIB} ${LWTSYNTAX}
-CAMLCC=		${OCAMLOPT} -pp '${CAMLP4}'
+CAMLP4=		camlp4of -I +camlp4 ${LWTSYNTAX}
+CAMLCC=		${OCAMLOPT} -nostdlib -I ${STDLIBDIR} -pp '${CAMLP4}'
 
-MIRDIR=		${KAML_SITELIB}/mirage-platform
+MIRDIR=		${CAML_SITELIB}/mirage-platform
 MIROBJS!=	ls ${MIRDIR}/*.cmxa
 MIRAS!=		ls ${MIRDIR}/*.a
 
 KMODO!=		ls ${MIRDIR}/kmod.o
 
-LWTDIR=		${KAML_SITELIB}/lwt
+LWTDIR=		${CAML_SITELIB}/lwt
 LWTOBJS!=	ls ${LWTDIR}/*.cmxa
 LWTAS!=		ls ${LWTDIR}/*.a
 LWTSYNTAX=	-I ${LWTDIR} lwt-syntax-options.cma lwt-syntax.cma
 
-CSTDIR=		${KAML_SITELIB}/cstruct
+CSTDIR=		${CAML_SITELIB}/cstruct
 CSTOBJS!=	ls ${CSTDIR}/*.cmxa
 CSTAS!=		ls ${CSTDIR}/*.a
 
