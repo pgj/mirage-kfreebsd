@@ -14,7 +14,7 @@ CFLAGS=		-O2 -DCAML_NAME_SPACE -DNATIVE_CODE -DSYS_bsd_elf -DTARGET_amd64 -Werro
 		-mno-red-zone -mno-mmx -msoft-float  -fno-asynchronous-unwind-tables -ffreestanding \
 		-fstack-protector -std=iso9899:1999 -fstack-protector -Wall -Wredundant-decls -Wnested-externs \
 		-Wstrict-prototypes  -Wmissing-prototypes -Wpointer-arith -Winline -Wcast-qual  -Wundef \
-		-Wno-pointer-sign -fformat-extensions  -Wmissing-include-dirs -fdiagnostics-show-option
+		-Wno-pointer-sign -fformat-extensions  -Wmissing-include-dirs -fdiagnostics-show-option -mno-sse
 
 LIBOCAML_SRCS!=		ls runtime/ocaml/*.c
 LIBOCAML_OBJS=		runtime/ocaml/amd64.o ${LIBOCAML_SRCS:M*.c:S/.c$/.o/}

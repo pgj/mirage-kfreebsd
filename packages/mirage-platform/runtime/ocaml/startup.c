@@ -143,7 +143,10 @@ struct longjmp_buffer caml_termination_jmpbuf;
 void (*caml_termination_hook)(void *) = NULL;
 
 extern value caml_start_program (void);
+#ifdef _KERNEL
+#else
 extern void caml_init_ieee_floats (void);
+#endif
 extern void caml_init_signals (void);
 
 void caml_main(char **argv)
@@ -155,7 +158,10 @@ void caml_main(char **argv)
   value res;
   char tos;
 
+#ifdef _KERNEL
+#else
   caml_init_ieee_floats();
+#endif
   caml_init_custom_operations();
 #ifdef DEBUG
   caml_verb_gc = 63;
