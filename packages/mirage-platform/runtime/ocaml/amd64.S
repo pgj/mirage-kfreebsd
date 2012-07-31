@@ -159,6 +159,8 @@ FUNCTION(G(caml_call_gc))
     /* Save caml_young_ptr, caml_exception_pointer */
 	STORE_VAR(%r15, caml_young_ptr)
 	STORE_VAR(%r14, caml_exception_pointer)
+#ifdef _KERNEL
+#else
     /* Save floating-point registers */
         subq    $(16*8), %rsp
         movlpd  %xmm0, 0*8(%rsp)
@@ -177,11 +179,14 @@ FUNCTION(G(caml_call_gc))
         movlpd  %xmm13, 13*8(%rsp)
         movlpd  %xmm14, 14*8(%rsp)
         movlpd  %xmm15, 15*8(%rsp)
+#endif
     /* Call the garbage collector */
         call    GCALL(caml_garbage_collection)
     /* Restore caml_young_ptr, caml_exception_pointer */
 	LOAD_VAR(caml_young_ptr, %r15)
 	LOAD_VAR(caml_exception_pointer, %r14)
+#ifdef _KERNEL
+#else
     /* Restore all regs used by the code generator */
         movlpd  0*8(%rsp), %xmm0
         movlpd  1*8(%rsp), %xmm1
@@ -200,6 +205,7 @@ FUNCTION(G(caml_call_gc))
         movlpd  14*8(%rsp), %xmm14
         movlpd  15*8(%rsp), %xmm15
         addq    $(16*8), %rsp
+#endif
         popq    %rax
         popq    %rbx
         popq    %rdi
