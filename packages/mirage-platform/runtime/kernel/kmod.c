@@ -128,6 +128,8 @@ mirage_kthread_launch(void)
 	MIR_DEBUG(1, printf("--> mirage_kthread_launch()\n"));
 	thread_lock(mirage_kthread);
 	sched_add(mirage_kthread, SRQ_BORING);
+	sched_class(mirage_kthread, PRI_TIMESHARE);
+	sched_prio(mirage_kthread, PRI_MAX_IDLE);
 	thread_unlock(mirage_kthread);
 	MIR_DEBUG(1, printf("<-- mirage_kthread_launch()\n"));
 }
