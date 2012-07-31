@@ -45,7 +45,7 @@ ${MLOBJS}:
 install: all
 	mkdir -p ${DESTDIR}
 	cp ${MLOBJS} ${DESTDIR}
-.if !empty(${COBJS})
+.if !empty(COBJS)
 	cp ${COBJS} ${DESTDIR}
 .endif
 
@@ -54,7 +54,7 @@ deinstall:
 
 clean::
 	rm -rf _build
-.if !empty(${COBJS})
+.if !empty(COBJS)
 	rm -rf ${COBJS}
 .endif
 
