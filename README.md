@@ -81,6 +81,11 @@ Loading the module may result in a crash and, as a side effect, in data
 loss.  Do not try this on a production machine ever.  You have been
 warned!**
 
+Note that since the kernel module is not installed to the default module
+path, one must specify it by the name of the file.
+
+    # kldload ./mirage.ko
+
 Upon the successful loading, some sysctl(3) variables should be created
 under the MIB `kern.mirage`.
 
