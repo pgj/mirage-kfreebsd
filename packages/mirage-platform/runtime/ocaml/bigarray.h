@@ -34,8 +34,11 @@ typedef unsigned short caml_ba_uint16;
 #define CAML_BA_MAX_NUM_DIMS 16
 
 enum caml_ba_kind {
+#ifdef _KERNEL
+#else
   CAML_BA_FLOAT32,             /* Single-precision floats */
   CAML_BA_FLOAT64,             /* Double-precision floats */
+#endif
   CAML_BA_SINT8,               /* Signed 8-bit integers */
   CAML_BA_UINT8,               /* Unsigned 8-bit integers */
   CAML_BA_SINT16,              /* Signed 16-bit integers */
@@ -44,8 +47,11 @@ enum caml_ba_kind {
   CAML_BA_INT64,               /* Signed 64-bit integers */
   CAML_BA_CAML_INT,            /* Caml-style integers (signed 31 or 63 bits) */
   CAML_BA_NATIVE_INT,       /* Platform-native long integers (32 or 64 bits) */
+#ifdef _KERNEL
+#else
   CAML_BA_COMPLEX32,           /* Single-precision complex */
   CAML_BA_COMPLEX64,           /* Double-precision complex */
+#endif
   CAML_BA_KIND_MASK = 0xFF     /* Mask for kind in flags field */
 };
 

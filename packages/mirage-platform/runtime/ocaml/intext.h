@@ -119,13 +119,19 @@ CAMLextern void caml_serialize_int_1(int i);
 CAMLextern void caml_serialize_int_2(int i);
 CAMLextern void caml_serialize_int_4(int32 i);
 CAMLextern void caml_serialize_int_8(int64 i);
+#ifdef _KERNEL
+#else
 CAMLextern void caml_serialize_float_4(float f);
 CAMLextern void caml_serialize_float_8(double f);
+#endif
 CAMLextern void caml_serialize_block_1(void * data, intnat len);
 CAMLextern void caml_serialize_block_2(void * data, intnat len);
 CAMLextern void caml_serialize_block_4(void * data, intnat len);
 CAMLextern void caml_serialize_block_8(void * data, intnat len);
+#ifdef _KERNEL
+#else
 CAMLextern void caml_serialize_block_float_8(void * data, intnat len);
+#endif
 
 CAMLextern int caml_deserialize_uint_1(void);
 CAMLextern int caml_deserialize_sint_1(void);
@@ -135,13 +141,19 @@ CAMLextern uint32 caml_deserialize_uint_4(void);
 CAMLextern int32 caml_deserialize_sint_4(void);
 CAMLextern uint64 caml_deserialize_uint_8(void);
 CAMLextern int64 caml_deserialize_sint_8(void);
+#ifdef _KERNEL
+#else
 CAMLextern float caml_deserialize_float_4(void);
 CAMLextern double caml_deserialize_float_8(void);
+#endif
 CAMLextern void caml_deserialize_block_1(void * data, intnat len);
 CAMLextern void caml_deserialize_block_2(void * data, intnat len);
 CAMLextern void caml_deserialize_block_4(void * data, intnat len);
 CAMLextern void caml_deserialize_block_8(void * data, intnat len);
+#ifdef _KERNEL
+#else
 CAMLextern void caml_deserialize_block_float_8(void * data, intnat len);
+#endif
 CAMLextern void caml_deserialize_error(char * msg);
 
 /* <private> */

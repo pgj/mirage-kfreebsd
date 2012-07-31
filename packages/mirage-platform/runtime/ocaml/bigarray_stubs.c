@@ -91,12 +91,19 @@ static uintnat caml_ba_num_elts(struct caml_ba_array * b)
 /* Size in bytes of a bigarray element, indexed by bigarray kind */
 
 int caml_ba_element_size[] =
-{ 4 /*FLOAT32*/, 8 /*FLOAT64*/,
+{
+#ifdef _KERNEL
+#else
+  4 /*FLOAT32*/, 8 /*FLOAT64*/,
+#endif
   1 /*SINT8*/, 1 /*UINT8*/,
   2 /*SINT16*/, 2 /*UINT16*/,
   4 /*INT32*/, 8 /*INT64*/,
   sizeof(value) /*CAML_INT*/, sizeof(value) /*NATIVE_INT*/,
+#ifdef _KERNEL
+#else
   8 /*COMPLEX32*/, 16 /*COMPLEX64*/
+#endif
 };
 
 /* Compute the number of bytes for the elements of a big array */
@@ -695,8 +702,11 @@ static intnat caml_ba_hash(value v)
     for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
     break;
   }
+#ifdef _KERNEL
+#else
   case CAML_BA_FLOAT32:
   case CAML_BA_COMPLEX32:
+#endif
   case CAML_BA_INT32:
 #ifndef ARCH_SIXTYFOUR
   case CAML_BA_CAML_INT:
@@ -707,8 +717,11 @@ static intnat caml_ba_hash(value v)
     for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
     break;
   }
+#ifdef _KERNEL
+#else
   case CAML_BA_FLOAT64:
   case CAML_BA_COMPLEX64:
+#endif
   case CAML_BA_INT64:
 #ifdef ARCH_SIXTYFOUR
   case CAML_BA_CAML_INT:
@@ -789,9 +802,14 @@ static void caml_ba_serialize(value v,
   case CAML_BA_SINT16:
   case CAML_BA_UINT16:
     caml_serialize_block_2(b->data, num_elts); break;
+#ifdef _KERNEL
+#else
   case CAML_BA_FLOAT32:
+#endif
   case CAML_BA_INT32:
     caml_serialize_block_4(b->data, num_elts); break;
+#ifdef _KERNEL
+#else
   case CAML_BA_COMPLEX32:
     caml_serialize_block_4(b->data, num_elts * 2); break;
   case CAML_BA_FLOAT64:
@@ -799,6 +817,7 @@ static void caml_ba_serialize(value v,
     caml_serialize_block_8(b->data, num_elts); break;
   case CAML_BA_COMPLEX64:
     caml_serialize_block_8(b->data, num_elts * 2); break;
+#endif
   case CAML_BA_CAML_INT:
     caml_ba_serialize_longarray(b->data, num_elts, -0x40000000, 0x3FFFFFFF);
     break;
@@ -846,7 +865,11 @@ uintnat caml_ba_deserialize(void * dst)
   /* Compute total number of elements */
   num_elts = caml_ba_num_elts(b);
   /* Determine element size in bytes */
+#ifdef _KERNEL
+  if ((b->flags & CAML_BA_KIND_MASK) > CAML_BA_NATIVE_INT)
+#else
   if ((b->flags & CAML_BA_KIND_MASK) > CAML_BA_COMPLEX64)
+#endif
     caml_deserialize_error("input_value: bad bigarray kind");
   elt_size = caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
   /* Allocate room for data */
@@ -861,16 +884,25 @@ uintnat caml_ba_deserialize(void * dst)
   case CAML_BA_SINT16:
   case CAML_BA_UINT16:
     caml_deserialize_block_2(b->data, num_elts); break;
+#ifdef _KERNEL
+#else
   case CAML_BA_FLOAT32:
+#endif
   case CAML_BA_INT32:
     caml_deserialize_block_4(b->data, num_elts); break;
+#ifdef _KERNEL
+#else
   case CAML_BA_COMPLEX32:
     caml_deserialize_block_4(b->data, num_elts * 2); break;
   case CAML_BA_FLOAT64:
+#endif
   case CAML_BA_INT64:
     caml_deserialize_block_8(b->data, num_elts); break;
+#ifdef _KERNEL
+#else
   case CAML_BA_COMPLEX64:
     caml_deserialize_block_8(b->data, num_elts * 2); break;
+#endif
   case CAML_BA_CAML_INT:
   case CAML_BA_NATIVE_INT:
     caml_ba_deserialize_longarray(b->data, num_elts); break;

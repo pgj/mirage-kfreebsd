@@ -369,6 +369,8 @@ static void extern_rec(value v)
       extern_record_location(v);
       break;
     }
+#ifdef _KERNEL
+#else
     case Double_tag: {
       if (sizeof(double) != 8)
         extern_invalid_argument("output_value: non-standard floats");
@@ -395,6 +397,7 @@ static void extern_rec(value v)
       extern_record_location(v);
       break;
     }
+#endif
     case Abstract_tag:
       extern_invalid_argument("output_value: abstract value (Abstract)");
       break;
@@ -639,6 +642,8 @@ CAMLexport void caml_serialize_int_8(int64 i)
   caml_serialize_block_8(&i, 1);
 }
 
+#ifdef _KERNEL
+#else
 CAMLexport void caml_serialize_float_4(float f)
 {
   caml_serialize_block_4(&f, 1);
@@ -648,6 +653,7 @@ CAMLexport void caml_serialize_float_8(double f)
 {
   caml_serialize_block_float_8(&f, 1);
 }
+#endif
 
 CAMLexport void caml_serialize_block_1(void * data, intnat len)
 {
@@ -707,6 +713,8 @@ CAMLexport void caml_serialize_block_8(void * data, intnat len)
 #endif
 }
 
+#ifdef _KERNEL
+#else
 CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 {
   if (extern_ptr + 8 * len > extern_limit) grow_extern_output(8 * len);
@@ -731,3 +739,4 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
   }
 #endif
 }
+#endif

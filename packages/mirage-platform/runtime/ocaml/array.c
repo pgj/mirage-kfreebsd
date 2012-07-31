@@ -22,17 +22,20 @@
 #include "mlvalues.h"
 
 CAMLprim value caml_array_get_addr(value array, value index);
+#ifdef _KERNEL
+#else
 CAMLprim value caml_array_get_float(value array, value index);
+CAMLprim value caml_array_unsafe_get_float(value array, value index);
+CAMLprim value caml_array_set_float(value array, value index, value newval);
+CAMLprim value caml_array_unsafe_set_float(value array,value index,value newval);
+#endif
 CAMLprim value caml_array_get(value array, value index);
 CAMLprim value caml_array_set_addr(value array, value index, value newval);
-CAMLprim value caml_array_unsafe_get_float(value array, value index);
 CAMLprim value caml_array_unsafe_get(value array, value index);
 CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval);
-CAMLprim value caml_array_unsafe_set_float(value array,value index,value newval);
 CAMLprim value caml_array_unsafe_set(value array, value index, value newval);
 CAMLprim value caml_make_vect(value len, value init);
 CAMLprim value caml_make_array(value init);
-CAMLprim value caml_array_set_float(value array, value index, value newval);
 CAMLprim value caml_array_set(value array, value index, value newval);
 
 
@@ -43,6 +46,8 @@ CAMLprim value caml_array_get_addr(value array, value index)
   return Field(array, idx);
 }
 
+#ifdef _KERNEL
+#else
 CAMLprim value caml_array_get_float(value array, value index)
 {
   intnat idx = Long_val(index);
@@ -60,12 +65,16 @@ CAMLprim value caml_array_get_float(value array, value index)
   Store_double_val(res, d);
   return res;
 }
+#endif
 
 CAMLprim value caml_array_get(value array, value index)
 {
+#ifdef _KERNEL
+#else
   if (Tag_val(array) == Double_array_tag)
     return caml_array_get_float(array, index);
   else
+#endif
     return caml_array_get_addr(array, index);
 }
 
@@ -77,6 +86,8 @@ CAMLprim value caml_array_set_addr(value array, value index, value newval)
   return Val_unit;
 }
 
+#ifdef _KERNEL
+#else
 CAMLprim value caml_array_set_float(value array, value index, value newval)
 {
   intnat idx = Long_val(index);
@@ -85,15 +96,21 @@ CAMLprim value caml_array_set_float(value array, value index, value newval)
   Store_double_field(array, idx, Double_val(newval));
   return Val_unit;
 }
+#endif
 
 CAMLprim value caml_array_set(value array, value index, value newval)
 {
+#ifdef _KERNEL
+#else
   if (Tag_val(array) == Double_array_tag)
     return caml_array_set_float(array, index, newval);
   else
+#endif
     return caml_array_set_addr(array, index, newval);
 }
 
+#ifdef _KERNEL
+#else
 CAMLprim value caml_array_unsafe_get_float(value array, value index)
 {
   double d;
@@ -108,12 +125,16 @@ CAMLprim value caml_array_unsafe_get_float(value array, value index)
   Store_double_val(res, d);
   return res;
 }
+#endif
 
 CAMLprim value caml_array_unsafe_get(value array, value index)
 {
+#ifdef _KERNEL
+#else
   if (Tag_val(array) == Double_array_tag)
     return caml_array_unsafe_get_float(array, index);
   else
+#endif
     return Field(array, Long_val(index));
 }
 
@@ -124,17 +145,23 @@ CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
   return Val_unit;
 }
 
+#ifdef _KERNEL
+#else
 CAMLprim value caml_array_unsafe_set_float(value array,value index,value newval)
 {
   Store_double_field(array, Long_val(index), Double_val(newval));
   return Val_unit;
 }
+#endif
 
 CAMLprim value caml_array_unsafe_set(value array, value index, value newval)
 {
+#ifdef _KERNEL
+#else
   if (Tag_val(array) == Double_array_tag)
     return caml_array_unsafe_set_float(array, index, newval);
   else
+#endif
     return caml_array_unsafe_set_addr(array, index, newval);
 }
 

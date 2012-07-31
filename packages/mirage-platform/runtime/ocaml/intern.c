@@ -127,7 +127,10 @@ static void intern_rec(value *dest)
   value v, clos;
   asize_t ofs;
   header_t header;
+#ifdef _KERNEL
+#else
   char cksum[16];
+#endif
   struct custom_operations * ops;
 
  tailcall:
@@ -225,6 +228,8 @@ static void intern_rec(value *dest)
       case CODE_STRING32:
         len = read32u();
         goto read_string;
+#ifdef _KERNEL
+#else
       case CODE_DOUBLE_LITTLE:
       case CODE_DOUBLE_BIG:
         if (sizeof(double) != 8) {
@@ -303,6 +308,7 @@ static void intern_rec(value *dest)
         }
         v = (value) (caml_code_area_start + ofs);
         break;
+#endif
       case CODE_INFIXPOINTER:
         ofs = read32u();
         intern_rec(&clos);

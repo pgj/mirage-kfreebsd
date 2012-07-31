@@ -36,7 +36,10 @@
 #define Restore_after_gc
 
 CAMLprim value caml_alloc_dummy(value size);
+#ifdef _KERNEL
+#else
 CAMLprim value caml_alloc_dummy_float (value size);
+#endif
 CAMLprim value caml_update_dummy(value dummy, value newval);
 
 
@@ -164,6 +167,8 @@ CAMLprim value caml_alloc_dummy(value size)
   return caml_alloc (wosize, 0);
 }
 
+#ifdef _KERNEL
+#else
 CAMLprim value caml_alloc_dummy_float (value size)
 {
   mlsize_t wosize = Int_val(size) * Double_wosize;
@@ -171,6 +176,7 @@ CAMLprim value caml_alloc_dummy_float (value size)
   if (wosize == 0) return Atom(0);
   return caml_alloc (wosize, 0);
 }
+#endif
 
 CAMLprim value caml_update_dummy(value dummy, value newval)
 {

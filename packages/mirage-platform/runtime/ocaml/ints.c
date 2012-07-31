@@ -44,10 +44,13 @@ CAMLprim value caml_int32_shift_right(value v1, value v2);
 CAMLprim value caml_int32_shift_right_unsigned(value v1, value v2);
 CAMLprim value caml_int32_of_int(value v);
 CAMLprim value caml_int32_to_int(value v);
+#ifdef _KERNEL
+#else
 CAMLprim value caml_int32_of_float(value v);
 CAMLprim value caml_int32_to_float(value v);
 CAMLprim value caml_int32_bits_of_float(value vd);
 CAMLprim value caml_int32_float_of_bits(value vi);
+#endif
 CAMLprim value caml_int32_compare(value v1, value v2);
 CAMLprim value caml_int32_format(value fmt, value arg);
 CAMLprim value caml_int32_of_string(value s);
@@ -67,10 +70,13 @@ CAMLprim value caml_int64_of_int(value v);
 CAMLprim value caml_int64_to_int(value v);
 CAMLprim value caml_int64_of_int32(value v);
 CAMLprim value caml_int64_to_int32(value v);
+#ifdef _KERNEL
+#else
 CAMLprim value caml_int64_of_float(value v);
 CAMLprim value caml_int64_to_float(value v);
 CAMLprim value caml_int64_bits_of_float(value vd);
 CAMLprim value caml_int64_float_of_bits(value vi);
+#endif
 CAMLprim value caml_int64_of_nativeint(value v);
 CAMLprim value caml_int64_to_nativeint(value v);
 CAMLprim value caml_int64_compare(value v1, value v2);
@@ -92,8 +98,11 @@ CAMLprim value caml_nativeint_of_int(value v);
 CAMLprim value caml_nativeint_to_int(value v);
 CAMLprim value caml_nativeint_of_int32(value v);
 CAMLprim value caml_nativeint_to_int32(value v);
+#ifdef _KERNEL
+#else
 CAMLprim value caml_nativeint_of_float(value v);
 CAMLprim value caml_nativeint_to_float(value v);
+#endif
 CAMLprim value caml_nativeint_compare(value v1, value v2);
 CAMLprim value caml_nativeint_format(value fmt, value arg);
 CAMLprim value caml_nativeint_of_string(value s);
@@ -388,17 +397,12 @@ CAMLprim value caml_int32_of_int(value v)
 CAMLprim value caml_int32_to_int(value v)
 { return Val_long(Int32_val(v)); }
 
-CAMLprim value caml_int32_of_float(value v)
 #ifdef _KERNEL
-{ NOT_IMPLEMENTED(caml_int32_of_float); }
 #else
+CAMLprim value caml_int32_of_float(value v)
 { return caml_copy_int32((int32)(Double_val(v))); }
-#endif
 
 CAMLprim value caml_int32_to_float(value v)
-#ifdef _KERNEL
-{ NOT_IMPLEMENTED(caml_int32_to_float); }
-#else
 { return caml_copy_double((double)(Int32_val(v))); }
 #endif
 
@@ -432,27 +436,23 @@ CAMLprim value caml_int32_of_string(value s)
 }
 
 
+#ifdef _KERNEL
+#else
 CAMLprim value caml_int32_bits_of_float(value vd)
 {
-#ifdef _KERNEL
-  NOT_IMPLEMENTED(caml_int32_bits_of_float);
-#else
   union { float d; int32 i; } u;
   u.d = Double_val(vd);
   return caml_copy_int32(u.i);
-#endif
 }
 
 CAMLprim value caml_int32_float_of_bits(value vi)
 {
-#ifdef _KERNEL
-  NOT_IMPLEMENTED(caml_int32_float_of_bits);
-#else
+
   union { float d; int32 i; } u;
   u.i = Int32_val(vi);
   return caml_copy_double(u.d);
-#endif
 }
+#endif
 
 /* 64-bit integers */
 
@@ -591,17 +591,12 @@ CAMLprim value caml_int64_to_int(value v)
 { return Val_long(I64_to_intnat(Int64_val(v))); }
 
 
-CAMLprim value caml_int64_of_float(value v)
 #ifdef _KERNEL
-{  NOT_IMPLEMENTED(caml_int64_of_float); }
 #else
+CAMLprim value caml_int64_of_float(value v)
 { return caml_copy_int64(I64_of_double(Double_val(v))); }
-#endif
 
 CAMLprim value caml_int64_to_float(value v)
-#ifdef _KERNEL
-{  NOT_IMPLEMENTED(caml_int64_to_float); }
-#else
 {
   int64 i = Int64_val(v);
   return caml_copy_double(I64_to_double(i));
@@ -686,36 +681,28 @@ CAMLprim value caml_int64_of_string(value s)
   return caml_copy_int64(res);
 }
 
-
-
-
+#ifdef _KERNEL
+#else
 CAMLprim value caml_int64_bits_of_float(value vd)
 {
-#ifdef _KERNEL
-  NOT_IMPLEMENTED(caml_int64_bits_of_float);
-#else
   union { double d; int64 i; int32 h[2]; } u;
   u.d = Double_val(vd);
 #if defined(__arm__) && !defined(__ARM_EABI__)
   { int32 t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
 #endif
   return caml_copy_int64(u.i);
-#endif
 }
 
 CAMLprim value caml_int64_float_of_bits(value vi)
 {
-#ifdef _KERNEL
-  NOT_IMPLEMENTED(caml_int64_float_of_bits);
-#else
   union { double d; int64 i; int32 h[2]; } u;
   u.i = Int64_val(vi);
 #if defined(__arm__) && !defined(__ARM_EABI__)
   { int32 t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
 #endif
   return caml_copy_double(u.d);
-#endif
 }
+#endif
 
 /* Native integers */
 
@@ -854,18 +841,12 @@ CAMLprim value caml_nativeint_of_int(value v)
 CAMLprim value caml_nativeint_to_int(value v)
 { return Val_long(Nativeint_val(v)); }
 
-
-CAMLprim value caml_nativeint_of_float(value v)
 #ifdef _KERNEL
-{ NOT_IMPLEMENTED(caml_nativeint_of_float); }
 #else
+CAMLprim value caml_nativeint_of_float(value v)
 { return caml_copy_nativeint((intnat)(Double_val(v))); }
-#endif
 
 CAMLprim value caml_nativeint_to_float(value v)
-#ifdef _KERNEL
-{ NOT_IMPLEMENTED(caml_nativeint_to_float); }
-#else
 { return caml_copy_double((double)(Nativeint_val(v))); }
 #endif
 
