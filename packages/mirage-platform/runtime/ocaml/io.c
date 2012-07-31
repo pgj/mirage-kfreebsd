@@ -19,8 +19,6 @@
 #include <sys/fcntl.h>
 #include <sys/limits.h>
 #include "fake_io.h"
-
-#define	console_print(P,N)	printf(P,N)
 #else
 #include <errno.h>
 #include <fcntl.h>
@@ -87,6 +85,10 @@ CAMLexport void caml_seek_in(struct channel *channel, file_offset dest);
 CAMLexport file_offset caml_pos_in(struct channel *channel);
 CAMLexport intnat caml_input_scan_line(struct channel *channel);
 CAMLexport void caml_finalize_channel(value vchan);
+
+#ifdef _KERNEL
+void console_print(const char *data, unsigned int length);
+#endif
 
 
 /* Hooks for locking channels */
@@ -197,6 +199,13 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
 #endif
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK (-1)
+#endif
+
+#ifdef _KERNEL
+void console_print(const char *data, unsigned int length)
+{
+  printf("%.*s", length, data);
+}
 #endif
 
 static int do_write(int fd, char *p, int n)
