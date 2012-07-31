@@ -15,30 +15,42 @@ addition, some of the original features may not be yet implemented fully
 at all.*
 
 
-Ports
------
+Prerequisities
+--------------
 
-There are FreeBSD ports in the following directories.
+In order to be able to build the sources, one has to install the OCaml
+compiler from the Ports Collection.  (It has been tested with version
+3.12.1 so far.)
 
-    ports/lang/ocaml
-    ports/lang/ocaml-kern
-
-They contain patches to the OCaml compiler to build kernel-enabled
-programs.  Here, `ocaml-kern` is a slave port to the standard `ocaml`
-port.  This will install the `ocaml-kern` package that may co-exist with
-the original ocaml installation, however it should be installed with a
-different `PREFIX`.
-
-That is, as a command, for example:
-
-    # make install clean PREFIX=/usr/local/okaml
+    # cd /usr/ports/lang/ocaml
+    # make install clean
 
 
-Packages
---------
+Installing the Customized Standard Library
+------------------------------------------
 
-There are also BSD make-based OCaml packages in the following
-directories.
+There is a customized standard library (which sources were ripped of the
+3.12.1 OCaml distribution) to be built before one could work with the
+sources.  It is in the following directory.
+
+    stdlib
+
+It contains a standalone version of the modified sources that could be
+compiled using BSD make.  It is possible to specify the place of the
+used OCaml toolchain by the `PREFIX` variable.  By default, that is
+`/usr/local`.
+
+    # make DESTDIR=/usr/local/mirage/stdlib install clean
+
+The `DESTDIR` variable is used to set the destination directory for the
+`install` target.  It is recommended to set it to a path which will be
+reachable for the other sources.
+
+
+Installing the Packages
+-----------------------
+
+There are BSD make-based OCaml packages in the following directories.
 
     packages/cstruct
     packages/lwt
@@ -53,12 +65,13 @@ internals of the `OS` module.
 Each of them can be installed from its directory with a single command
 (as root):
 
-    # make KAMLROOT=/usr/local/okaml install clean
+    # make STDLIBDIR=/usr/local/mirage/stdlib install clean
 
-`KAMLROOT` sets the path where the kernel-enabled version of the OCaml
-compiler was installed previously.  These packages will be installed to
-this path, under the `lib/ocaml/site-lib` directory.  That is, they are
-kept separately from the regular OCaml packages this way.
+`STDLIBDIR` should point to the path where the customized OCaml standard
+library has been installed previously.  It is also possible to use the
+`CAMLROOT` variable to indicate a non-standard path for the OCaml
+installation -- it defaults to `/usr/local`.  This will be then used
+at installation.
 
 
 Creating and Loading An Application as Kernel Module
@@ -71,7 +84,7 @@ directory.
 
 It does not require to be installed, it is enough to build it (as root).
 
-    # make KAMLROOT=/usr/local/okaml
+    # make
 
 This should generate a kernel module under the name `mirage.ko`, which
 then could be loaded into the running kernel.

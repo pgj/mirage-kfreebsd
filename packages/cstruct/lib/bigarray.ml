@@ -29,16 +29,10 @@ type int_elt
 type int32_elt
 type int64_elt
 type nativeint_elt
-type float32_elt
-type float64_elt
-type complex32_elt
-type complex64_elt
 
 (* Keep those constants in sync with the caml_ba_kind enumeration
    in bigarray.h *)
 
-let float32 = 0
-let float64 = 1
 let int8_signed = 2
 let int8_unsigned = 3
 let int16_signed = 4
@@ -48,8 +42,6 @@ let int64 = 7
 let int = 8
 let nativeint = 9
 let char = int8_unsigned
-let complex32 = 10
-let complex64 = 11
 
 type 'a layout = int
 

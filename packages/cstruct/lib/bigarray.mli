@@ -35,14 +35,6 @@
 (** {6 Element kinds} *)
 
 (** Big arrays can contain elements of the following kinds:
-- IEEE single precision (32 bits) floating-point numbers
-   ({!Bigarray.float32_elt}),
-- IEEE double precision (64 bits) floating-point numbers
-   ({!Bigarray.float64_elt}),
-- IEEE single precision (2 * 32 bits) floating-point complex numbers
-   ({!Bigarray.complex32_elt}),
-- IEEE double precision (2 * 64 bits) floating-point complex numbers
-   ({!Bigarray.complex64_elt}),
 - 8-bit integers (signed or unsigned)
    ({!Bigarray.int8_signed_elt} or {!Bigarray.int8_unsigned_elt}),
 - 16-bit integers (signed or unsigned)
@@ -58,10 +50,6 @@
    of the abstract types defined below.
 *)
 
-type float32_elt
-type float64_elt
-type complex32_elt
-type complex64_elt
 type int8_signed_elt
 type int8_unsigned_elt
 type int16_signed_elt
@@ -87,18 +75,6 @@ type ('a, 'b) kind
    of the big array.  The following predefined values of type
    [kind] list all possible associations of Caml types with
    element kinds: *)
-
-val float32 : (float, float32_elt) kind
-(** See {!Bigarray.char}. *)
-
-val float64 : (float, float64_elt) kind
-(** See {!Bigarray.char}. *)
-
-val complex32 : (Complex.t, complex32_elt) kind
-(** See {!Bigarray.char}. *)
-
-val complex64 : (Complex.t, complex64_elt) kind
-(** See {!Bigarray.char}. *)
 
 val int8_signed : (int, int8_signed_elt) kind
 (** See {!Bigarray.char}. *)
