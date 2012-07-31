@@ -50,7 +50,8 @@ Packages `cstruct` and `lwt` are stripped and BSD makefied versions of
 the corresponding packages, while `mirage-platform` implements the
 internals of the `OS` module.
 
-They can be installed with a single command (as root):
+Each of them can be installed from its directory with a single command
+(as root):
 
     # make KAMLROOT=/usr/local/okaml install clean
 
