@@ -1,17 +1,18 @@
 
 let rec fib n =
-  (*Printf.eprintf "[n = %d]" n;*)
+  let l = Printf.sprintf "[n = %d]" n in
+  prerr_endline l;
   if n < 2 then 1 else fib (n - 1) + fib (n - 2)
 
 let f () =
-  Printf.eprintf "Sorry, no in-kernel Mirage today!\n";
-  Printf.eprintf "And there is a second message...\n";
-  Printf.eprintf "Finally a third one.\n";
-  Printf.eprintf "Let's do some Fibonacci!\n";
+  prerr_endline "Sorry, no in-kernel Mirage today!";
+  prerr_endline "And there is a second message...";
+  prerr_endline "Finally a third one.";
+  prerr_endline "Let's do some Fibonacci!";
   fib 32;
-  Printf.eprintf "\n";
+  prerr_endline;
   true
 
 let _ =
-  Printf.eprintf "This message comes somewhere from the body.\n";
+  prerr_endline "This message comes somewhere from the body.";
   Callback.register "OS.Main.run" f
