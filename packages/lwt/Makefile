@@ -10,4 +10,4 @@ MLLIB=		src/core/lwt.cmxa src/core/lwt.cma src/core/lwt.a \
 		syntax/lwt-syntax-log.cmxa \
 		syntax/optcomp.a syntax/optcomp.cma syntax/optcomp.cmxa
 
-.include "../bsd.mirage.mk"
+.include "${.CURDIR}/../bsd.mirage.mk"

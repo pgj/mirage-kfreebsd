@@ -42,7 +42,7 @@ ${_ILINKS}:
 runtime/kernel/kmod.o: ${_ILINKS}
 .endif
 
-.include "../bsd.mirage.mk"
+.include "${.CURDIR}/../bsd.mirage.mk"
 
 clean::
 	rm -rf ${LIBOCAML_OBJS}
