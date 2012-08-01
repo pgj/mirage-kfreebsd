@@ -25,6 +25,11 @@ compiler from the Ports Collection.  (It has been tested with version
     # cd /usr/ports/lang/ocaml
     # make install clean
 
+It is also required to install the findlib utility.
+
+    # cd /usr/ports/devel/ocaml-findlib
+    # make install clean
+
 
 Installing the Customized Standard Library
 ------------------------------------------
@@ -33,45 +38,37 @@ There is a customized standard library (which sources were ripped of the
 3.12.1 OCaml distribution) to be built before one could work with the
 sources.  It is in the following directory.
 
-    stdlib
+    packages/mirage-stdlib
 
 It contains a standalone version of the modified sources that could be
 compiled using BSD make.  It is possible to specify the place of the
 used OCaml toolchain by the `PREFIX` variable.  By default, that is
 `/usr/local`.
 
-    # make DESTDIR=/usr/local/mirage/stdlib install clean
+    # make install clean
 
-The `DESTDIR` variable is used to set the destination directory for the
-`install` target.  It is recommended to set it to a path which will be
-reachable for the other sources.
+This command will install the `mirage-stdlib` package that all the
+others rely on.
 
 
-Installing the Packages
------------------------
+Installing the Rest of the Packages
+-----------------------------------
 
-There are BSD make-based OCaml packages in the following directories.
+The other OCaml packages available are as follows.
 
     packages/cstruct
     packages/lwt
     packages/mirage-platform
 
-They contain all the packages that will be needed to build Mirage's OS
-module, which is then required to build a FreeBSD kernel module.
-Packages `cstruct` and `lwt` are stripped and BSD makefied versions of
-the corresponding packages, while `mirage-platform` implements the
-internals of the `OS` module.
+All of them will be needed to build Mirage's OS module, which is then
+required to build a FreeBSD kernel module. Packages `cstruct` and `lwt`
+are stripped and adapted versions of the corresponding packages, while
+`mirage-platform` implements the internals of the `OS` module.
 
 Each of them can be installed from its directory with a single command
 (as root):
 
-    # make STDLIBDIR=/usr/local/mirage/stdlib install clean
-
-`STDLIBDIR` should point to the path where the customized OCaml standard
-library has been installed previously.  It is also possible to use the
-`CAMLROOT` variable to indicate a non-standard path for the OCaml
-installation -- it defaults to `/usr/local`.  This will be then used
-at installation.
+    # make install clean
 
 
 Creating and Loading An Application as Kernel Module
