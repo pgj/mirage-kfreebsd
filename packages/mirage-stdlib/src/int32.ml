@@ -29,10 +29,6 @@ external shift_right : int32 -> int -> int32 = "%int32_asr"
 external shift_right_logical : int32 -> int -> int32 = "%int32_lsr"
 external of_int : int -> int32 = "%int32_of_int"
 external to_int : int32 -> int = "%int32_to_int"
-external of_float : float -> int32 = "caml_int32_of_float"
-external to_float : int32 -> float = "caml_int32_to_float"
-external bits_of_float : float -> int32 = "caml_int32_bits_of_float"
-external float_of_bits : int32 -> float = "caml_int32_float_of_bits"
 
 let zero = 0l
 let one = 1l

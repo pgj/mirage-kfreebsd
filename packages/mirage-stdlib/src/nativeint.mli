@@ -130,16 +130,6 @@ external to_int : nativeint -> int = "%nativeint_to_int"
    integer (type [int]).  The high-order bit is lost during
    the conversion. *)
 
-external of_float : float -> nativeint = "caml_nativeint_of_float"
-(** Convert the given floating-point number to a native integer,
-   discarding the fractional part (truncate towards 0).
-   The result of the conversion is undefined if, after truncation,
-   the number is outside the range
-   \[{!Nativeint.min_int}, {!Nativeint.max_int}\]. *)
-
-external to_float : nativeint -> float = "caml_nativeint_to_float"
-(** Convert the given native integer to a floating-point number. *)
-
 external of_int32 : int32 -> nativeint = "%nativeint_of_int32"
 (** Convert the given 32-bit integer (type [int32])
    to a native integer. *)

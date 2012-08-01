@@ -206,27 +206,6 @@ init 299792643; init_diff2 100; chisquare diff2 100000 100;;
 
 *)
 
-(* Return the sum of the squares of v[i0,i1[ *)
-let rec sumsq v i0 i1 =
-  if i0 >= i1 then 0.0
-  else if i1 = i0 + 1 then Pervasives.float v.(i0) *. Pervasives.float v.(i0)
-  else sumsq v i0 ((i0+i1)/2) +. sumsq v ((i0+i1)/2) i1
-;;
-
-let chisquare g n r =
-  if n <= 10 * r then invalid_arg "chisquare";
-  let f = Array.make r 0 in
-  for i = 1 to n do
-    let t = g r in
-    f.(t) <- f.(t) + 1
-  done;
-  let t = sumsq f 0 r
-  and r = Pervasives.float r
-  and n = Pervasives.float n in
-  let sr = 2.0 *. sqrt r in
-  (r -. sr,   (r *. t /. n) -. n,   r +. sr)
-;;
-
 (* This is to test for linear dependencies between successive random numbers.
 *)
 let st = ref 0;;
