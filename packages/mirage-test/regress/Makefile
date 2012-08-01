@@ -9,6 +9,11 @@ basic/console:
 	echo "let _ = OS.Main.run (Console.main ())" > main.ml
 	${MAKE} -f Makefile.kmod STDLIBDIR=${STDLIBDIR} SRCS=console.ml KMOD=mirage-regress-console
 
+basic/exception:
+	ln -sf basic/exception.ml exception.ml
+	echo "let _ = OS.Main.run (Exception.main ())" > main.ml
+	${MAKE} -f Makefile.kmod STDLIBDIR=${STDLIBDIR} SRCS=exception.ml KMOD=mirage-regress-exception
+
 .PHONY: clean
 
 clean:
