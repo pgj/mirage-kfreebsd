@@ -15,8 +15,8 @@ addition, some of the original features may not be yet implemented fully
 at all.*
 
 
-Prerequisities
---------------
+Prerequisites
+-------------
 
 In order to be able to build the sources, one has to install the OCaml
 compiler from the Ports Collection.  (It has been tested with version
