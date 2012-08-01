@@ -1,0 +1,25 @@
+version = "2.4.0"
+description = "Lightweight thread library for OCaml (core library)"
+archive(byte) = "lwt.cma"
+archive(byte, plugin) = "lwt.cma"
+archive(native) = "lwt.cmxa"
+archive(native, plugin) = "lwt.cmxs"
+exists_if = "lwt.cma"
+requires = "mirage-stdlib"
+
+package "syntax" (
+ version = "2.4.0"
+ description = "Syntactic sugars for Lwt"
+ requires = "camlp4 lwt.syntax.options"
+ archive(syntax, preprocessor) = "lwt-syntax.cma"
+ archive(syntax, toploop) = "lwt-syntax.cma"
+ exists_if = "lwt-syntax.cma"
+ package "options" (
+  version = "2.4.0"
+  description = "Options for syntax extensions"
+  requires = "camlp4"
+  archive(syntax, preprocessor) = "lwt-syntax-options.cma"
+  archive(syntax, toploop) = "lwt-syntax-options.cma"
+  exists_if = "lwt-syntax-options.cma"
+ )
+)

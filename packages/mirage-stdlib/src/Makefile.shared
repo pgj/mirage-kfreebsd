@@ -25,12 +25,12 @@ SHARPBANGSCRIPTS=true
 BNG_ARCH=amd64
 BNG_ASM_LEVEL=1
 PTHREAD_LINK=-cclib -pthread
-X11_INCLUDES=-I/usr/local/include
-X11_LINK=-L/usr/local/lib -lX11
+X11_INCLUDES=-I$(PREFIX)/include
+X11_LINK=-L$(PREFIX)/lib -lX11
 DBM_INCLUDES=
 DBM_LINK=
-TK_DEFS=-I/usr/local/include/tcl8.5 -I/usr/local/include/tk8.5  $(X11_INCLUDES)
-TK_LINK=-L/usr/local/lib -ltk85-threads  -ltcl85-threads -pthread  $(X11_LINK)
+TK_DEFS=-I$(PREFIX)/include/tcl8.5 -I$(PREFIX)/include/tk8.5  $(X11_INCLUDES)
+TK_LINK=-L$(PREFIX)/lib -ltk85-threads  -ltcl85-threads -pthread  $(X11_LINK)
 LIBBFD_LINK=
 BYTECC=cc
 BYTECCCOMPOPTS= -D_FILE_OFFSET_BITS=64 -D_REENTRANT -D_THREAD_SAFE -O -pipe 

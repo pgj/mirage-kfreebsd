@@ -6,18 +6,18 @@ KMOD?= mirage
 CAMLP4=		camlp4of -I +camlp4 ${LWTSYNTAX}
 CAMLCC=		${OCAMLOPT} -nostdlib -I ${STDLIBDIR} -pp '${CAMLP4}'
 
-MIRDIR=		${CAML_SITELIB}/mirage-platform
+MIRDIR!=	${OCAMLFIND} query mirage-platform
 MIROBJS!=	ls ${MIRDIR}/*.cmxa
 MIRAS!=		ls ${MIRDIR}/*.a
 
 KMODO!=		ls ${MIRDIR}/kmod.o
 
-LWTDIR=		${CAML_SITELIB}/lwt
+LWTDIR!=	${OCAMLFIND} query lwt
 LWTOBJS!=	ls ${LWTDIR}/*.cmxa
 LWTAS!=		ls ${LWTDIR}/*.a
 LWTSYNTAX=	-I ${LWTDIR} lwt-syntax-options.cma lwt-syntax.cma
 
-CSTDIR=		${CAML_SITELIB}/cstruct
+CSTDIR!=	${OCAMLFIND} query cstruct
 CSTOBJS!=	ls ${CSTDIR}/*.cmxa
 CSTAS!=		ls ${CSTDIR}/*.a
 

@@ -1,0 +1,4 @@
+version = "0.1"
+description = "Custom standard library for Mirage/kFreeBSD"
+archive(byte) = "stdlib.cma"
+archive(native) = "stdlib.cmxa"

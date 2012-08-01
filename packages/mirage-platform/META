@@ -1,0 +1,5 @@
+version = "0.1"
+description = "Mirage/kFreeBSD"
+archive(byte) = "oS.cma"
+archive(native) = "oS.cmxa"
+requires = "cstruct.syntax lwt lwt.syntax mirage-stdlib"

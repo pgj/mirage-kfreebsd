@@ -1,31 +1,27 @@
 
-.if !defined(STDLIBDIR)
-.error STDLIBDIR must be specified.
+OCAMLFIND?=	ocamlfind
+
+.if empty(LIBNAME) || ${LIBNAME} != "mirage-stdlib"
+STDLIBDIR!=	${OCAMLFIND} query mirage-stdlib
 .endif
 
-CAMLROOT?=	/usr/local
-CAML_BIN?=	${CAMLROOT}/bin
-CAML_LIB?=	${CAMLROOT}/lib/ocaml
-CAML_P4LIB?=	${CAML_LIB}/camlp4
-CAML_SITELIB?=	${CAML_LIB}/site-lib
-
-OCAMLC=		ocamlc.opt ${DEPLIBS}
-OCAMLOPT=	ocamlopt.opt -nodynlink -fno-PIC ${DEPLIBS}
+OCAMLC=		ocamlc.opt ${OCAMLCFLAGS} ${DEPLIBS}
+OCAMLOPT=	ocamlopt.opt -nodynlink -fno-PIC ${OCAMLOPTFLAGS} ${DEPLIBS}
 OCAMLBUILD=	ocamlbuild -ocamlc "${OCAMLC}" -ocamlopt "${OCAMLOPT}"
 
-.if defined(LIBNAME)
-
-DESTDIR?=	${CAML_SITELIB}/${LIBNAME}
-
 .if !empty(DEPS)
-DEPLIBS=	${DEPS:M*:S|^|-I ${CAML_SITELIB}/|}
+_DEPLIBS!=	${OCAMLFIND} query ${DEPS}
+DEPLIBS=	${_DEPLIBS:M*:S|^|-I |}
 .endif
+
+.if defined(LIBNAME)
 
 CMIS=		${SRCS:M*.ml:S/.ml$/.cmi/}
 CMXS=		${SRCS:M*.ml:S/.ml$/.cmx/}
 
+BUILDDIR?=	_build
 _MLOBJS=	${CMIS} ${CMXS} ${MLLIB}
-MLOBJS=		${_MLOBJS:M*:S|^|_build/|}
+MLOBJS=		${_MLOBJS:M*:S|^|${BUILDDIR}/|}
 
 .SUFFIXES:	.o
 
@@ -37,25 +33,27 @@ MLOBJS=		${_MLOBJS:M*:S|^|_build/|}
 
 .PHONY: all clean deinstall
 
+.if !target(all)
 all: ${MLOBJS} ${COBJS}
+.endif
 
 ${MLOBJS}:
 	${OCAMLBUILD} ${CMIS} ${CMXS} ${MLLIB}
 
 install: all
-	mkdir -p ${DESTDIR}
-	cp ${MLOBJS} ${DESTDIR}
-.if !empty(COBJS)
-	cp ${COBJS} ${DESTDIR}
-.endif
+	${OCAMLFIND} install ${LIBNAME} META ${MLOBJS} ${COBJS}
 
 deinstall:
-	rm -rf ${CAML_SITELIB}/${LIBNAME}
+	${OCAMLFIND} remove ${LIBNAME}
 
+reinstall: deinstall install
+
+.if !target(clean)
 clean::
 	rm -rf _build
 .if !empty(COBJS)
 	rm -rf ${COBJS}
+.endif
 .endif
 
 .endif # LIBNAME

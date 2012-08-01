@@ -12,7 +12,3 @@ clean:
 
 depend:
 	gmake -f GNUMakefile depend
-
-install: all
-	gmake -f GNUMakefile install LIBDIR=${DESTDIR} PREFIX=${PREFIX}
-	gmake -f GNUMakefile installopt LIBDIR=${DESTDIR} PREFIX=${PREFIX}
