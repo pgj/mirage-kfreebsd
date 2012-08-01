@@ -35,6 +35,8 @@ let run t =
       | Some _ -> true
       | None   -> false
     with exn ->
-      (Printf.printf "Top-level exception: %s\n!"
-        (Printexc.to_string exn); true) in
+      (let t   = Printexc.to_string exn in
+       let msg = Printf.sprintf "Top-level exception: \"%s\"!" t in
+       prerr_endline msg;
+      true) in
   ignore (Callback.register "OS.Main.run" aux)
