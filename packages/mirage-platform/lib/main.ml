@@ -27,6 +27,14 @@
 
 open Lwt
 
-let run _ =
-  let rec aux () = true in
+let run t =
+  let rec aux () =
+    Lwt.wakeup_paused ();
+    try
+      match Lwt.poll t with
+      | Some _ -> true
+      | None   -> false
+    with exn ->
+      (Printf.printf "Top-level exception: %s\n!"
+        (Printexc.to_string exn); true) in
   ignore (Callback.register "OS.Main.run" aux)

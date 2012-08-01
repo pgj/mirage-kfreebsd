@@ -58,7 +58,6 @@ MALLOC_DEFINE(M_MIRAGE, "mirage", "Mirage run-time");
 
 static SYSCTL_NODE(_kern, OID_AUTO, mirage, CTLFLAG_RD, NULL, "mirage");
 
-static int caml_completed      = 0;
 static int mirage_kthread_done = 0;
 
 static struct thread *mirage_kthread = NULL;
@@ -67,6 +66,7 @@ static void
 mirage_kthread_body(void *arg __unused)
 {
 	value *v_main;
+	int caml_completed = 0;
 
 	MIR_DEBUG(1, printf("--> mirage_kthread_body()\n"));
 	MIR_DEBUG(2, printf("mirage: kernel thread actived, caml run-time starts\n"));
@@ -80,13 +80,13 @@ mirage_kthread_body(void *arg __unused)
 	}
 
 	MIR_DEBUG(2, printf("mirage: main function found, kicking off the main loop\n"));
-	mirage_kthread_done = 1;
-	for (; (caml_completed == 0) && (mirage_kthread_done != 0);) {
+	mirage_kthread_done = 0;
+	for (; (caml_completed == 0) && (mirage_kthread_done == 0);) {
 		caml_completed = Bool_val(caml_callback(*v_main, Val_unit));
 	}
 	MIR_DEBUG(2, printf("mirage: main loop exited = (%d,%d)\n",
 	    caml_completed, mirage_kthread_done));
-	mirage_kthread_done = 0;
+	mirage_kthread_done = 1;
 
 done:
 	MIR_DEBUG(2, printf("mirage: kernel thread exiting\n"));
@@ -117,7 +117,7 @@ static int
 mirage_kthread_deinit(void)
 {
 	MIR_DEBUG(1, printf("--> mirage_kthread_deinit()\n"));
-	mirage_kthread_done = 0;
+	mirage_kthread_done = 1;
 	MIR_DEBUG(1, printf("<-- mirage_kthread_deinit()\n"));
 	return 0;
 }
