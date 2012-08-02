@@ -3,7 +3,7 @@ LIBNAME=	mirage-platform
 
 SRCS!=		ls lib/*.ml
 MLLIB=		lib/oS.cmxa lib/oS.a lib/oS.cmx lib/oS.cmi
-COBJS=		runtime/kernel/kmod.o runtime/ocaml/libocaml.a
+COBJS=		runtime/kernel/clock_stubs.o runtime/kernel/kmod.o runtime/ocaml/libocaml.a
 
 PWD!=		pwd
 

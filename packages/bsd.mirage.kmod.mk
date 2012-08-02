@@ -10,7 +10,7 @@ MIRDIR!=	${OCAMLFIND} query mirage-platform
 MIROBJS!=	ls ${MIRDIR}/*.cmxa
 MIRAS!=		ls ${MIRDIR}/*.a
 
-KMODO!=		ls ${MIRDIR}/kmod.o
+KERNOBJS!=	ls ${MIRDIR}/*.o
 
 LWTDIR!=	${OCAMLFIND} query lwt
 LWTOBJS!=	ls ${LWTDIR}/*.cmxa
@@ -43,6 +43,6 @@ main.o: main.ml ${CMXS}
 CLEANFILES+=	main.cmi main.cmx ${CMXS} ${CMIS} ${SRCS:M*.ml:S/.ml$/.o/}
 
 ${KMOD}.ko: ${OBJS} ${STLIBS}
-	${LD} ${LDFLAGS} -r -d -o ${.TARGET} main.o ${KMODO} ${STLIBS}
+	${LD} ${LDFLAGS} -r -d -o ${.TARGET} main.o ${KERNOBJS} ${STLIBS}
 
 .include <bsd.kmod.mk>
