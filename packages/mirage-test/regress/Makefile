@@ -14,6 +14,21 @@ basic/exception:
 	echo "let _ = OS.Main.run (Exception.main ())" > main.ml
 	${MAKE} -f Makefile.kmod SRCS=exception.ml KMOD=mirage-regress-exception
 
+perf/alloc:
+	ln -sf perf/alloc.ml alloc.ml
+	echo "let _ = OS.Main.run (Alloc.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=alloc.ml KMOD=mirage-perf-alloc
+
+perf/gcperf:
+	ln -sf perf/gcperf.ml gcperf.ml
+	echo "let _ = OS.Main.run (Gcperf.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=gcperf.ml KMOD=mirage-perf-gcperf
+
+perf/sieve:
+	ln -sf perf/sieve.ml sieve.ml
+	echo "let _ = OS.Main.run (Sieve.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=sieve.ml KMOD=mirage-perf-sieve
+
 .PHONY: clean
 
 clean:
