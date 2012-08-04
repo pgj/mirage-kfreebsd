@@ -1,0 +1,9 @@
+*~
+.#*
+_build/
+*.cmi
+*.cmx
+*.cmo
+*.cmxa
+*.o
+*.ko
