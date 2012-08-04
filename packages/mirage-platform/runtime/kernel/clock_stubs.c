@@ -29,6 +29,7 @@
 
 #include "caml/mlvalues.h"
 #include "caml/alloc.h"
+#include "caml/memory.h"
 
 CAMLprim value kern_gettimeofday(value v_unit);
 CAMLprim value kern_gmtime(value t);
@@ -72,7 +73,8 @@ kern_gmtime(value t)
 {
 	time_t clock, x, k;
 	int i, mday;
-	value res;
+	CAMLparam1(t);
+	CAMLlocal1(res);
 
 	res = caml_alloc_small(9, 0);
 	clock = (time_t) Long_val(t) / 1000000;
@@ -107,5 +109,5 @@ kern_gmtime(value t)
 	mday += x - dpm[i];
 	Field(res,3) = Val_int(mday);
 	Field(res,8) = Val_false;
-	return res;
+	CAMLreturn(res);
 }
