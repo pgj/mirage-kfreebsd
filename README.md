@@ -104,6 +104,12 @@ under the MIB `kern.mirage`.
 Set the verbosity of debug information provided by the module.  It is
 `3` (the highest) by default -- set to `0` if no information is needed.
 
+    kern.mirage.rtparams
+
+Set parameters for the run-time system.  It is a string value that may take
+exactly the same options as the `OCAMLRUNPARAM` environment variable in the
+[Caml documentation](http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual024.html#toc97).
+
     kern.mirage.run
 
 Start the code inside the kernel module.  Writing any value to this
