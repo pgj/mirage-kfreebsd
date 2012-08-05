@@ -40,6 +40,9 @@
 #include "ui.h"
 #endif
 
+static void parse_camlrunparam(void);
+static void scanmult (char *opt, uintnat *var);
+
 extern int caml_parser_trace;
 CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
@@ -86,7 +89,6 @@ static uintnat max_percent_free_init = Max_percent_free_def;
 static uintnat minor_heap_init = Minor_heap_def;
 static uintnat heap_chunk_init = Heap_chunk_def;
 static uintnat heap_size_init = Init_heap_def;
-#ifndef _KERNEL
 static uintnat max_stack_init = Max_stack_def;
 
 /* Parse the CAMLRUNPARAM variable */
@@ -112,12 +114,23 @@ static void scanmult (char *opt, uintnat *var)
   }
 }
 
+#ifdef _KERNEL
+extern char mir_rtparams[64];
+#endif
+
 static void parse_camlrunparam(void)
 {
+#ifdef _KERNEL
+  char *opt;
+  uintnat p;
+
+  opt = mir_rtparams;
+#else
   char *opt = getenv ("OCAMLRUNPARAM");
   uintnat p;
 
   if (opt == NULL) opt = getenv ("CAMLRUNPARAM");
+#endif
 
   if (opt != NULL){
     while (*opt != '\0'){
@@ -136,7 +149,6 @@ static void parse_camlrunparam(void)
     }
   }
 }
-#endif
 
 /* These are termination hooks used by the systhreads library */
 struct longjmp_buffer caml_termination_jmpbuf;
@@ -167,9 +179,7 @@ void caml_main(char **argv)
   caml_verb_gc = 63;
 #endif
   caml_top_of_stack = &tos;
-#ifndef _KERNEL
   parse_camlrunparam();
-#endif
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   init_atoms();

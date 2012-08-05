@@ -43,6 +43,7 @@
 #include "caml/mlvalues.h"
 #include "caml/callback.h"
 
+static char mir_rtparams[64] = "";
 static int mir_debug = 3;
 
 #define MIR_DEBUG(l, x)			\
@@ -163,6 +164,9 @@ SYSCTL_PROC(_kern_mirage, OID_AUTO, run, CTLTYPE_INT | CTLFLAG_RW, 0,
 
 SYSCTL_INT(_kern_mirage, OID_AUTO, debug, CTLFLAG_RW, &mir_debug, 0,
     "debug level");
+
+SYSCTL_STRING(_kern_mirage, OID_AUTO, rtparams, CTLFLAG_RW, &mir_rtparams,
+    sizeof(mir_rtparams), "parameters for the run-time");
 
 static int
 event_handler(struct module *module, int event, void *arg) {
