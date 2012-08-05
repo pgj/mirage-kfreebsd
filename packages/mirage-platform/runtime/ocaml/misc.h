@@ -34,9 +34,9 @@
 
 MALLOC_DECLARE(M_MIRAGE);
 
-#define	__malloc(X)	malloc(X, M_MIRAGE, M_WAITOK)
-#define	__realloc(P,X)	realloc(P,X, M_MIRAGE, M_WAITOK)
-#define	__calloc(X,S)	malloc(X*S, M_MIRAGE, M_WAITOK | M_ZERO)
+#define	__malloc(X)	malloc(X, M_MIRAGE, M_NOWAIT)
+#define	__realloc(P,X)	realloc(P,X, M_MIRAGE, M_NOWAIT)
+#define	__calloc(X,S)	malloc(X*S, M_MIRAGE, M_NOWAIT | M_ZERO)
 #define	__free(X)	free(X, M_MIRAGE)
 #else
 #define	__malloc(X)	malloc(X)
