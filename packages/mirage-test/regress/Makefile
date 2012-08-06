@@ -14,6 +14,11 @@ basic/exception:
 	echo "let _ = OS.Main.run (Exception.main ())" > main.ml
 	${MAKE} -f Makefile.kmod SRCS=exception.ml KMOD=mirage-regress-exception
 
+basic/sleep:
+	ln -sf basic/sleep.ml sleep.ml
+	echo "let _ = OS.Main.run (Sleep.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=sleep.ml KMOD=mirage-basic-sleep
+
 perf/alloc:
 	ln -sf perf/alloc.ml alloc.ml
 	echo "let _ = OS.Main.run (Alloc.main ())" > main.ml
