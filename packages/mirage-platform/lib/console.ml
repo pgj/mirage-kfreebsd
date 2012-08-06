@@ -31,8 +31,7 @@ let t =
   create ()
 
 let log s =
-  write t s 0 (String.length s);
-  write t "\n" 0 1
+  write t s 0 (String.length s)
 
 let log_s s =
   sync_write t s 0 (String.length s)
