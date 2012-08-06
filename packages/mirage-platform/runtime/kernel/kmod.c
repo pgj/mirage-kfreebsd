@@ -210,6 +210,6 @@ caml_block_kernel(value v_timeout)
 	CAMLparam1(v_timeout);
 	block_timo = Int_val(v_timeout);
 	MIR_DEBUG(2, printf("mirage: Blocking kernel for %d us\n", block_timo));
-	pause("caml_block_kernel", (block_timo / 1000000) * hz);
+	pause("caml_block_kernel", (block_timo * hz) / 1000000);
 	CAMLreturn(Val_unit);
 }
