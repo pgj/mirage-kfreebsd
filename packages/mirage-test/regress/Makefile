@@ -23,6 +23,51 @@ basic/sleep:
 	echo "let _ = OS.Main.run (Sleep.main ())" > main.ml
 	${MAKE} -f Makefile.kmod SRCS=sleep.ml KMOD=mirage-basic-sleep
 
+lwt/echoserver1:
+	ln -sf lwt/echoserver1.ml .
+	echo "let _ = OS.Main.run (Echoserver1.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=echoserver1.ml KMOD=mirage-lwt-echoserver1
+
+lwt/echoserver2:
+	ln -sf lwt/echoserver2.ml .
+	echo "let _ = OS.Main.run (Echoserver2.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=echoserver2.ml KMOD=mirage-lwt-echoserver2
+
+lwt/heads1:
+	ln -sf lwt/heads1.ml .
+	echo "let _ = OS.Main.run (Heads1.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=heads1.ml KMOD=mirage-lwt-heads1
+
+lwt/heads2:
+	ln -sf lwt/heads2.ml .
+	echo "let _ = OS.Main.run (Heads2.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=heads2.ml KMOD=mirage-lwt-heads2
+
+lwt/heads_syntax:
+	ln -sf lwt/heads_syntax.ml .
+	echo "let _ = OS.Main.run (Heads_syntax.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=heads_syntax.ml KMOD=mirage-lwt-heads_syntax
+
+lwt/intserver:
+	ln -sf lwt/intserver.ml .
+	echo "let _ = OS.Main.run (Intserver.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=intserver.ml KMOD=mirage-lwt-intserver
+
+lwt/stream_processing:
+	ln -sf lwt/stream_processing.ml .
+	echo "let _ = OS.Main.run (Stream_processing.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=stream_processing.ml KMOD=mirage-lwt-stream_processing
+
+lwt/timeout1:
+	ln -sf lwt/timeout1.ml .
+	echo "let _ = OS.Main.run (Timeout1.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=timeout1.ml KMOD=mirage-lwt-timeout1
+
+lwt/timeout2:
+	ln -sf lwt/timeout2.ml .
+	echo "let _ = OS.Main.run (Timeout2.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=timeout2.ml KMOD=mirage-lwt-timeout2
+
 perf/alloc:
 	ln -sf perf/alloc.ml .
 	echo "let _ = OS.Main.run (Alloc.main ())" > main.ml
