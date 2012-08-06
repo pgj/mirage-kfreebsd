@@ -121,16 +121,6 @@ char *caml_aligned_malloc_for_minor (asize_t size, int modulo, void **block)
   return (char *) (aligned_mem - modulo);
 }
 
-#ifdef USE_STATIC_VMEM
-/* If we ever get a superpage mapping failure, then turn off this flag
- * and fall back to normal 4Kb pages. Note that Xen is required to be booted
- * with the "allowsuperpage" hypervisor option to permit this to work at all,
- * and so most Xen installations will fail on superpage mappings.  It may
- * also affect suspend/resume.
- */
-static int use_superpages = 1;
-#endif
-
 char *caml_aligned_malloc_for_major (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
