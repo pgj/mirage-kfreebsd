@@ -63,7 +63,13 @@ MALLOC_DEFINE(M_MIRAGE, "mirage", "Mirage run-time");
 
 static SYSCTL_NODE(_kern, OID_AUTO, mirage, CTLFLAG_RD, NULL, "mirage");
 
-static int mirage_kthread_done = 0;
+enum thread_state {
+	THR_NONE,
+	THR_RUNNING,
+	THR_STOPPED
+};
+
+static enum thread_state mirage_kthread_state = THR_NONE;
 
 static struct thread *mirage_kthread = NULL;
 
@@ -73,6 +79,7 @@ mirage_kthread_body(void *arg __unused)
 	value *v_main;
 	int caml_completed = 0;
 
+	mirage_kthread_state = THR_RUNNING;
 	MIR_DEBUG(1, printf("--> mirage_kthread_body()\n"));
 	MIR_DEBUG(2, printf("mirage: kernel thread actived, caml run-time starts\n"));
 	caml_startup(argv);
@@ -85,16 +92,17 @@ mirage_kthread_body(void *arg __unused)
 	}
 
 	MIR_DEBUG(2, printf("mirage: main function found, kicking off the main loop\n"));
-	mirage_kthread_done = 0;
-	for (; (caml_completed == 0) && (mirage_kthread_done == 0);) {
+	for (; (caml_completed == 0) && (mirage_kthread_state == THR_RUNNING);) {
 		caml_completed = Bool_val(caml_callback(*v_main, Val_unit));
 	}
 	MIR_DEBUG(2, printf("mirage: main loop exited = (%d,%d)\n",
-	    caml_completed, mirage_kthread_done));
-	mirage_kthread_done = 1;
+	    caml_completed, (int) mirage_kthread_state));
 
 done:
 	MIR_DEBUG(2, printf("mirage: kernel thread exiting\n"));
+	if (mirage_kthread_state == THR_STOPPED)
+		wakeup(&mirage_kthread_state);
+	mirage_kthread_state = THR_NONE;
 	kthread_exit();
 	MIR_DEBUG(1, printf("<-- mirage_kthread_body()\n"));
 }
@@ -108,6 +116,7 @@ mirage_kthread_init(void)
 	MIR_DEBUG(1, printf("--> mirage_kthread_init()\n"));
 	error = kthread_add(mirage_kthread_body, NULL, NULL, &mirage_kthread,
 	    RFSTOPPED, 40, "mirage");
+	mirage_kthread_state = THR_STOPPED;
 	if (error != 0) {
 		printf("[MIRAGE] Could not create herding kernel thread.\n");
 		goto done;
@@ -122,7 +131,12 @@ static int
 mirage_kthread_deinit(void)
 {
 	MIR_DEBUG(1, printf("--> mirage_kthread_deinit()\n"));
-	mirage_kthread_done = 1;
+	if (mirage_kthread_state == THR_RUNNING) {
+		mirage_kthread_state = THR_STOPPED;
+		tsleep((void *) &mirage_kthread_state, 0,
+		    "mirage_kthread_deinit", 0);
+		pause("mirage_kthread_deinit", 1);
+	}
 	MIR_DEBUG(1, printf("<-- mirage_kthread_deinit()\n"));
 	return 0;
 }
@@ -152,7 +166,7 @@ sysctl_kern_mirage_run(SYSCTL_HANDLER_ARGS)
 	if (error != 0 || req->newptr == NULL)
 		return (error);
 	{
-		if (mirage_kthread_done == 0) {
+		if (mirage_kthread_state == THR_NONE) {
 			mirage_kthread_init();
 			mirage_kthread_launch();
 		}
