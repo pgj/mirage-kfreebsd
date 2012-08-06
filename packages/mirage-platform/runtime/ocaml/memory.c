@@ -491,13 +491,13 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 {
   if (max == 0) max = 1;
   if (res > max) res = max;
-  caml_extra_heap_resources +=  res / max;
-  if (caml_extra_heap_resources > 1){
-    caml_extra_heap_resources = 1;
+  caml_extra_heap_resources +=  (res * P_RATIO) / max;
+  if (caml_extra_heap_resources > P_RATIO){
+    caml_extra_heap_resources = P_RATIO;
     caml_urge_major_slice ();
   }
   if (caml_extra_heap_resources
-           > Wsize_bsize (caml_minor_heap_size) / 2
+           > (Wsize_bsize (caml_minor_heap_size) * P_RATIO) / 2
              / Wsize_bsize (caml_stat_heap_size)) {
     caml_urge_major_slice ();
   }

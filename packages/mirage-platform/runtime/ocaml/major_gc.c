@@ -343,10 +343,10 @@ intnat caml_major_collection_slice (intnat howmuch)
 
   if (caml_gc_phase == Phase_idle) start_cycle ();
 
-  p = caml_allocated_words * 3 * (100 + caml_percent_free)
+  p = (caml_allocated_words * 3 * (100 + caml_percent_free) * P_RATIO)
       / Wsize_bsize (caml_stat_heap_size) / caml_percent_free / 2;
   if (caml_dependent_size > 0){
-    dp = caml_dependent_allocated * (100 + caml_percent_free)
+    dp = (caml_dependent_allocated * (100 + caml_percent_free) * P_RATIO)
          / caml_dependent_size / caml_percent_free;
   }else{
     dp = 0;
@@ -354,21 +354,19 @@ intnat caml_major_collection_slice (intnat howmuch)
   if (p < dp) p = dp;
   if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
 
-  caml_gc_message (0x40, "allocated_words = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+  caml_gc_message (0x40, "allocated_words = %lu\n",
                    caml_allocated_words);
-  caml_gc_message (0x40, "extra_heap_resources = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "uu\n",
-                   (uintnat) (caml_extra_heap_resources * 1000000));
-  caml_gc_message (0x40, "amount of work to do = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "uu\n",
-                   (uintnat) (p * 1000000));
+  caml_gc_message (0x40, "extra_heap_resources = %lu\n",
+                   1000000 * caml_extra_heap_resources / P_RATIO);
+  caml_gc_message (0x40, "amount of work to do = %lu\n",
+                   1000000 * p / P_RATIO);
 
   if (caml_gc_phase == Phase_mark){
     computed_work = (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 250
-                              / (100 + caml_percent_free));
+                              / (100 + caml_percent_free)) / P_RATIO;
   }else{
-    computed_work = (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 5 / 3);
+    computed_work = (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 5 / 3)
+                              / P_RATIO;
   }
   caml_gc_message (0x40, "ordered work = %ld words\n", howmuch);
   caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
@@ -571,5 +569,5 @@ void caml_init_major_heap (asize_t heap_size)
   gray_vals_end = gray_vals + gray_vals_size;
   heap_is_pure = 1;
   caml_allocated_words = 0;
-  caml_extra_heap_resources = 0.0;
+  caml_extra_heap_resources = 0;
 }
