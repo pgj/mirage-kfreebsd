@@ -61,7 +61,7 @@
 
 #endif
 
-#ifdef __PIC__
+#if defined(__PIC__) && !defined(_KERNEL)
 
 /* Position-independent operations on global variables. */
 

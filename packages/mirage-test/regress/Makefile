@@ -29,6 +29,16 @@ perf/sieve:
 	echo "let _ = OS.Main.run (Sieve.main ())" > main.ml
 	${MAKE} -f Makefile.kmod SRCS=sieve.ml KMOD=mirage-perf-sieve
 
+perf/thread_create:
+	ln -sf perf/thread_create.ml thread_create.ml
+	echo "let _ = OS.Main.run (Thread_create.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=thread_create.ml KMOD=mirage-perf-thread_create
+
+perf/thread_lat:
+	ln -sf perf/thread_lat.ml thread_lat.ml
+	echo "let _ = OS.Main.run (Thread_lat.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=thread_lat.ml KMOD=mirage-perf-thread_lat
+
 .PHONY: clean
 
 clean:

@@ -27,13 +27,23 @@
 
 open Lwt
 
+external block_kernel : int -> unit = "caml_block_kernel"
+
 let run t =
   let rec aux () =
     Lwt.wakeup_paused ();
+    Time.restart_threads Clock.time;
     try
       match Lwt.poll t with
       | Some _ -> true
-      | None   -> false
+      | None   ->
+        let timeout =
+          match Time.select_next Clock.time with
+          | None    -> 86400000000
+          | Some tm -> tm
+        in
+        block_kernel timeout;
+        false
     with exn ->
       (let t   = Printexc.to_string exn in
        let msg = Printf.sprintf "Top-level exception: \"%s\"!" t in

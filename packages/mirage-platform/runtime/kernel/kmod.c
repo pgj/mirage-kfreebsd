@@ -42,6 +42,10 @@
 
 #include "caml/mlvalues.h"
 #include "caml/callback.h"
+#include "caml/memory.h"
+
+CAMLprim value caml_block_kernel(value v_timeout);
+
 
 static char mir_rtparams[64] = "";
 static int mir_debug = 3;
@@ -103,7 +107,7 @@ mirage_kthread_init(void)
 	error = 0;
 	MIR_DEBUG(1, printf("--> mirage_kthread_init()\n"));
 	error = kthread_add(mirage_kthread_body, NULL, NULL, &mirage_kthread,
-	    RFSTOPPED, 0, "mirage");
+	    RFSTOPPED, 40, "mirage");
 	if (error != 0) {
 		printf("[MIRAGE] Could not create herding kernel thread.\n");
 		goto done;
@@ -197,3 +201,15 @@ static moduledata_t mirage_conf = {
 };
 
 DECLARE_MODULE(mirage, mirage_conf, SI_SUB_KLD, SI_ORDER_ANY);
+
+static int block_timo;
+
+CAMLprim value
+caml_block_kernel(value v_timeout)
+{
+	CAMLparam1(v_timeout);
+	block_timo = Int_val(v_timeout);
+	MIR_DEBUG(2, printf("mirage: Blocking kernel for %d us\n", block_timo));
+	pause("caml_block_kernel", (block_timo / 1000000) * hz);
+	CAMLreturn(Val_unit);
+}
