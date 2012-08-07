@@ -568,10 +568,18 @@ static void caml_ba_finalize(value v)
     break;
   case CAML_BA_MANAGED:
     if (b->proxy == NULL) {
-      __free(b->data);
+#ifdef _KERNEL
+      contigfree(b->data, PAGE_SIZE, M_MIRAGE);
+#else
+      free(b->data);
+#endif
     } else {
       if (-- b->proxy->refcount == 0) {
-        __free(b->proxy->data);
+#ifdef _KERNEL
+        contigfree(b->proxy->data, PAGE_SIZE, M_MIRAGE);
+#else
+        free(b->proxy->data);
+#endif
         caml_stat_free(b->proxy);
       }
     }

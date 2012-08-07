@@ -18,6 +18,11 @@ basic/exception:
 	echo "let _ = OS.Main.run (Exception.main ())" > main.ml
 	${MAKE} -f Makefile.kmod SRCS=exception.ml KMOD=mirage-basic-exception
 
+basic/netif:
+	ln -sf basic/netif.ml .
+	echo "let _ = OS.Main.run (Netif.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=netif.ml KMOD=mirage-basic-netif
+
 basic/sleep:
 	ln -sf basic/sleep.ml .
 	echo "let _ = OS.Main.run (Sleep.main ())" > main.ml

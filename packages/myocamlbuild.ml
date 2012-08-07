@@ -28,6 +28,8 @@ dispatch begin function
 	(S[A "-I"; A "+camlp4"]);
     flag ["compile"; "use_custom_stdlib"]
 	(S[A "-nostdlib"; A "-I"; A (query "mirage-stdlib")]);
+    flag ["compile"; "use_cstruct"]
+	(S[A "-I"; A (query "cstruct")]);
     flag ["ocaml"; "pp"; "use_lwt_syntax"]
 	(S[A "-I"; A (query "lwt"); A "lwt-syntax-options.cma"; A "lwt-syntax.cma"]);
 | _ -> ()
