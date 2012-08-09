@@ -39,6 +39,8 @@
 #include <sys/systm.h>
 #include <sys/malloc.h>
 #include <sys/sysctl.h>
+#include <sys/kernel.h>
+#include <sys/sdt.h>
 
 #include "caml/mlvalues.h"
 #include "caml/callback.h"
@@ -46,20 +48,28 @@
 
 CAMLprim value caml_block_kernel(value v_timeout);
 
-
 static char mir_rtparams[64] = "";
-static int mir_debug = 3;
-
-#define MIR_DEBUG(l, x)			\
-	do {				\
-		if (mir_debug >= l) {	\
-			(x);		\
-		}			\
-	} while (0)
-
 static char* argv[] = { "mirage", NULL };
 
 MALLOC_DEFINE(M_MIRAGE, "mirage", "Mirage run-time");
+SDT_PROVIDER_DEFINE(mirage);
+
+SDT_PROBE_DEFINE(mirage, kernel, kthread, entry, entry);
+SDT_PROBE_DEFINE(mirage, kernel, kthread, return, return);
+SDT_PROBE_DEFINE(mirage, kernel, caml_startup, start, start);
+SDT_PROBE_DEFINE(mirage, kernel, caml_startup, finish, finish);
+SDT_PROBE_DEFINE(mirage, kernel, kthread_init, entry, entry);
+SDT_PROBE_DEFINE(mirage, kernel, kthread_init, return, return);
+SDT_PROBE_ARGTYPE(mirage, kernel, kthread_init, return, 0, "int");
+SDT_PROBE_DEFINE(mirage, kernel, kthread_deinit, entry, entry);
+SDT_PROBE_DEFINE(mirage, kernel, kthread_deinit, return, return);
+SDT_PROBE_DEFINE(mirage, kernel, kthread_loop, start, start);
+SDT_PROBE_DEFINE(mirage, kernel, kthread_loop, stop, stop);
+SDT_PROBE_DEFINE(mirage, kernel, kthread_launch, entry, entry);
+SDT_PROBE_DEFINE(mirage, kernel, kthread_launch, return, return);
+SDT_PROBE_DEFINE(mirage, kernel, block_kernel, entry, entry);
+SDT_PROBE_ARGTYPE(mirage, kernel, block_kernel, entry, 0, "int");
+SDT_PROBE_DEFINE(mirage, kernel, block_kernel, return, return);
 
 static SYSCTL_NODE(_kern, OID_AUTO, mirage, CTLFLAG_RD, NULL, "mirage");
 
@@ -80,10 +90,10 @@ mirage_kthread_body(void *arg __unused)
 	int caml_completed = 0;
 
 	mirage_kthread_state = THR_RUNNING;
-	MIR_DEBUG(1, printf("--> mirage_kthread_body()\n"));
-	MIR_DEBUG(2, printf("mirage: kernel thread actived, caml run-time starts\n"));
+	SDT_PROBE(mirage, kernel, kthread, entry, 0, 0, 0, 0, 0);
+	SDT_PROBE(mirage, kernel, caml_startup, start, 0, 0, 0, 0, 0);
 	caml_startup(argv);
-	MIR_DEBUG(2, printf("mirage: caml run-time finished, searching the main function\n"));
+	SDT_PROBE(mirage, kernel, caml_startup, finish, 0, 0, 0, 0, 0);
 	v_main = caml_named_value("OS.Main.run");
 
 	if (v_main == NULL) {
@@ -91,20 +101,19 @@ mirage_kthread_body(void *arg __unused)
 		goto done;
 	}
 
-	MIR_DEBUG(2, printf("mirage: main function found, kicking off the main loop\n"));
+	SDT_PROBE(mirage, kernel, kthread_loop, start, 0, 0, 0, 0, 0);
 	for (; (caml_completed == 0) && (mirage_kthread_state == THR_RUNNING);) {
 		caml_completed = Bool_val(caml_callback(*v_main, Val_unit));
 	}
-	MIR_DEBUG(2, printf("mirage: main loop exited = (%d,%d)\n",
-	    caml_completed, (int) mirage_kthread_state));
+	SDT_PROBE(mirage, kernel, kthread_loop, stop, caml_completed,
+	    (int) mirage_kthread_state, 0, 0, 0);
 
 done:
-	MIR_DEBUG(2, printf("mirage: kernel thread exiting\n"));
 	if (mirage_kthread_state == THR_STOPPED)
 		wakeup(&mirage_kthread_state);
 	mirage_kthread_state = THR_NONE;
+	SDT_PROBE(mirage, kernel, kthread, return, 0, 0, 0, 0, 0);
 	kthread_exit();
-	MIR_DEBUG(1, printf("<-- mirage_kthread_body()\n"));
 }
 
 static int
@@ -112,8 +121,7 @@ mirage_kthread_init(void)
 {
 	int error;
 
-	error = 0;
-	MIR_DEBUG(1, printf("--> mirage_kthread_init()\n"));
+	SDT_PROBE(mirage, kernel, kthread_init, entry, 0, 0, 0, 0, 0);
 	error = kthread_add(mirage_kthread_body, NULL, NULL, &mirage_kthread,
 	    RFSTOPPED, 40, "mirage");
 	mirage_kthread_state = THR_STOPPED;
@@ -123,34 +131,34 @@ mirage_kthread_init(void)
 	}
 
 done:
-	MIR_DEBUG(1, printf("<-- mirage_kthread_init()\n"));
+	SDT_PROBE(mirage, kernel, kthread_init, return, error, 0, 0, 0, 0);
 	return error;
 }
 
 static int
 mirage_kthread_deinit(void)
 {
-	MIR_DEBUG(1, printf("--> mirage_kthread_deinit()\n"));
+	SDT_PROBE(mirage, kernel, kthread_deinit, entry, 0, 0, 0, 0, 0);
 	if (mirage_kthread_state == THR_RUNNING) {
 		mirage_kthread_state = THR_STOPPED;
 		tsleep((void *) &mirage_kthread_state, 0,
 		    "mirage_kthread_deinit", 0);
 		pause("mirage_kthread_deinit", 1);
 	}
-	MIR_DEBUG(1, printf("<-- mirage_kthread_deinit()\n"));
+	SDT_PROBE(mirage, kernel, kthread_deinit, return, 0, 0, 0, 0, 0);
 	return 0;
 }
 
 static void
 mirage_kthread_launch(void)
 {
-	MIR_DEBUG(1, printf("--> mirage_kthread_launch()\n"));
+	SDT_PROBE(mirage, kernel, kthread_launch, entry, 0, 0, 0, 0, 0);
 	thread_lock(mirage_kthread);
 	sched_add(mirage_kthread, SRQ_BORING);
 	sched_class(mirage_kthread, PRI_TIMESHARE);
 	sched_prio(mirage_kthread, PRI_MAX_IDLE);
 	thread_unlock(mirage_kthread);
-	MIR_DEBUG(1, printf("<-- mirage_kthread_launch()\n"));
+	SDT_PROBE(mirage, kernel, kthread_launch, return, 0, 0, 0, 0, 0);
 }
 
 static int
@@ -171,7 +179,7 @@ sysctl_kern_mirage_run(SYSCTL_HANDLER_ARGS)
 			mirage_kthread_launch();
 		}
 		else {
-			MIR_DEBUG(1, printf("mirage: a kernel thread has been already launched.\n"));
+			printf("[MIRAGE] Kernel thread is already running.\n");
 		}
 	}
 	return (0);
@@ -179,9 +187,6 @@ sysctl_kern_mirage_run(SYSCTL_HANDLER_ARGS)
 
 SYSCTL_PROC(_kern_mirage, OID_AUTO, run, CTLTYPE_INT | CTLFLAG_RW, 0,
     sizeof(int), sysctl_kern_mirage_run, "I", "start module");
-
-SYSCTL_INT(_kern_mirage, OID_AUTO, debug, CTLFLAG_RW, &mir_debug, 0,
-    "debug level");
 
 SYSCTL_STRING(_kern_mirage, OID_AUTO, rtparams, CTLFLAG_RW, &mir_rtparams,
     sizeof(mir_rtparams), "parameters for the run-time");
@@ -222,8 +227,10 @@ CAMLprim value
 caml_block_kernel(value v_timeout)
 {
 	CAMLparam1(v_timeout);
+
 	block_timo = Int_val(v_timeout);
-	MIR_DEBUG(2, printf("mirage: Blocking kernel for %d us\n", block_timo));
+	SDT_PROBE(mirage, kernel, block_kernel, entry, block_timo, 0, 0, 0, 0);
 	pause("caml_block_kernel", (block_timo * hz) / 1000000);
+	SDT_PROBE(mirage, kernel, block_kernel, return, 0, 0, 0, 0, 0);
 	CAMLreturn(Val_unit);
 }

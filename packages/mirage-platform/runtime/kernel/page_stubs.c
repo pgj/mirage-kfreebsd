@@ -27,6 +27,8 @@
 
 #include <sys/types.h>
 #include <sys/malloc.h>
+#include <sys/kernel.h>
+#include <sys/sdt.h>
 
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -34,6 +36,12 @@
 #include "caml/alloc.h"
 #include "caml/fail.h"
 #include "caml/bigarray.h"
+
+SDT_PROVIDER_DECLARE(mirage);
+
+SDT_PROBE_DEFINE(mirage, kernel, alloc_pages, entry, entry);
+SDT_PROBE_ARGTYPE(mirage, kernel, alloc_pages, entry, 0, "size_t");
+SDT_PROBE_DEFINE(mirage, kernel, alloc_pages, return, return);
 
 CAMLprim value caml_alloc_pages(value n_pages);
 
@@ -47,6 +55,7 @@ caml_alloc_pages(value n_pages)
 	unsigned long block;
 
 	len = Int_val(n_pages);
+	SDT_PROBE(mirage, kernel, alloc_pages, entry, len, 0, 0, 0, 0);
 	block = (unsigned long) contigmalloc(PAGE_SIZE * len, M_MIRAGE,
 	    M_NOWAIT, 0, 0xffffffff, PAGE_SIZE, 0ul);
 	if (block == 0)
@@ -58,5 +67,6 @@ caml_alloc_pages(value n_pages)
 		Store_field(result, i, page);
 		block += (PAGE_SIZE / sizeof(unsigned long));
 	};
+	SDT_PROBE(mirage, kernel, alloc_pages, return, 0, 0, 0, 0, 0);
 	CAMLreturn(result);
 }

@@ -21,7 +21,8 @@ CFLAGS=		-O2 -DCAML_NAME_SPACE -DNATIVE_CODE -DSYS_bsd_elf \
 		-Wredundant-decls -Wnested-externs -Wstrict-prototypes \
 		-Wmissing-prototypes -Wpointer-arith -Winline -Wcast-qual \
 		-Wundef -Wno-pointer-sign -fformat-extensions \
-		-Wmissing-include-dirs -fdiagnostics-show-option -mno-sse
+		-Wmissing-include-dirs -fdiagnostics-show-option -mno-sse \
+		-DKDTRACE_HOOKS
 
 DEPS=		lwt
 
