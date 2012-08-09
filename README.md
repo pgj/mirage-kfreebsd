@@ -99,11 +99,6 @@ path, one must specify it by the name of the file.
 Upon the successful loading, some sysctl(3) variables should be created
 under the MIB `kern.mirage`.
 
-    kern.mirage.debug
-
-Set the verbosity of debug information provided by the module.  It is
-`3` (the highest) by default -- set to `0` if no information is needed.
-
     kern.mirage.rtparams
 
 Set parameters for the run-time system.  It is a string value that may take
@@ -119,6 +114,26 @@ restarted many times, however this is not recommended -- reload the
 module first instead.
 
     # sysctl kern.mirage.run=1
+
+
+Tracing with DTrace
+-------------------
+
+There are some Statically Defined Tracing (SDT) probes added to the sources
+for tracing, profiling and debugging purposes.  The currently active probes
+can be listed by the following command.
+
+    # dtrace -l -P mirage
+
+Some D scripts can be found under the `dtrace` directory in the
+`mirage-platform` package.
+
+*Note: In order to make this work, upgrading to a recent FreeBSD -CURRENT is
+strongly recommended.  The probes are added to a kernel module, which may
+only work with base system revisions after r233552.  It is also required to
+load the `dtraceall` kernel module and have the `KDTRACE_HOOKS` enabled
+for the system.  (Note that this is already enabled in the aforementioned
+revisions.)*
 
 
 Contact & Contribute
