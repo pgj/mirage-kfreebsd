@@ -14,19 +14,18 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-(** kFreeBSD Netfront interface for Ethernet I/O *)
+(** kFreeBSD network interface for Ethernet I/O *)
 
-(** Type of a single netfront interface *)
+(** Type of a single interface *)
 type t
 
-(** Textual id which is unique per netfront interface *)
+(** Textual id which is unique per interface *)
 type id = string
 
 (** Create a hotplug interface that will spawn a new thread
     per network interface.
 
-    @param fn Callback function that is invoked for every new netfront
-              interface.
+    @param fn Callback function that is invoked for every new interface.
     @return Blocking thread that will unplug all the attached interfaces
             if cancelled.
   *)
@@ -46,14 +45,15 @@ val write : t -> Io_page.t -> unit Lwt.t
 (** Output a list of Io_pages to an interface as a single packet *)
 val writev : t -> Io_page.t list -> unit Lwt.t
 
-(** Listen endlesses on a Netfront, and invoke the callback function as frames are
+(** Listen endlesses on the interface, and invoke the callback function as frames are
     received. *)
 val listen : t -> (Io_page.t -> unit Lwt.t) -> unit Lwt.t
 
-(** Enumerate all the currently available Netfronts (which may or may not be attached) *)
+(** Enumerate all the currently available network interfaces (which may or may
+    not be attached) *)
 val enumerate : unit -> id list Lwt.t
 
-(** Return the MAC address of the Netfront *)
+(** Return the MAC address of the interface *)
 val ethid : t -> string
 val mac : t -> string
 

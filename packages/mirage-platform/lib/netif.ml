@@ -47,33 +47,33 @@ let unplug id =
   Console.log (sprintf "Netif.unplug %s: not implemented yet" id);
   ()
 
-let create fn =
+let create f =
   Console.log (sprintf "Netif.create: not implemented yet");
   return ()
 
-let write nf page =
-  Console.log (sprintf "Netif.write %s: not implemented yet" nf.backend);
+let write ifc page =
+  Console.log (sprintf "Netif.write %s: not implemented yet" ifc.backend);
   return ()
 
-let writev nf pages =
-  Console.log (sprintf "Netif.writev %s: not implemented yet" nf.backend);
+let writev ifc pages =
+  Console.log (sprintf "Netif.writev %s: not implemented yet" ifc.backend);
   return ()
 
-let listen nf fn =
-  Console.log (sprintf "Netif.listen %s: not implemented yet" nf.backend);
+let listen ifc fn =
+  Console.log (sprintf "Netif.listen %s: not implemented yet" ifc.backend);
   return ()
 
 let enumerate () =
   Console.log (sprintf "Netif.enumerate: not implemented yet");
   return []
 
-let mac nf =
-  Console.log (sprintf "Netif.mac %s: not implemented yet" nf.backend);
+let mac ifc =
+  Console.log (sprintf "Netif.mac %s: not implemented yet" ifc.backend);
   ""
 
-let ethid nf =
-  string_of_int nf.backend_id
+let ethid ifc =
+  string_of_int ifc.backend_id
 
-let get_writebuf nf =
+let get_writebuf ifc =
   let page = Io_page.get() in
   return page
