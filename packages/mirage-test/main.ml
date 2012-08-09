@@ -1,11 +1,18 @@
+
 open Lwt
+open Printf
 open OS.Clock
 open OS.Console
 open OS.Time
 open OS.Main
+open OS.Netif
 
 let rec fib n =
   if n < 2 then 1 else fib (n - 1) + fib (n - 2)
+
+let rec print_vifs l = match_lwt l with
+  | []      -> return ()
+  | (x::xs) -> log_s x >> print_vifs (return xs)
 
 let f () =
   log_s "Sorry, no in-kernel Mirage today!" >>
@@ -17,15 +24,14 @@ let f () =
   let t2 = time () in
   log_s "... and now wake up!" >>
   let passed = (t2 - t1) / 1000 in
-  let msg = Printf.sprintf "Time passed: %d ms.\n" passed in
-  log_s msg >>
+  log_s (sprintf "Time passed: %d ms.\n" passed) >>
   log_s "Let's do some Fibonacci!" >>
   let n = 42 in
-  let msg = Printf.sprintf "fib %d = " n in
-  log_s msg >>
-  let msg = Printf.sprintf "%d" (fib n) in
-  log_s msg >>
-  return ()
+  log_s (sprintf "fib %d = " n) >>
+  log_s (sprintf "%d" (fib n)) >>
+  log_s "Available network interfaces: " >>
+  let ifs = enumerate () in
+  print_vifs ifs
 
 let day_of n = match n with
   | 0 -> "Sun"

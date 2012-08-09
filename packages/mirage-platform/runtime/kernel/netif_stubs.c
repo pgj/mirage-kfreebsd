@@ -1,4 +1,4 @@
-(*-
+/*-
  * Copyright (c) 2012 Gabor Pali
  * All rights reserved.
  *
@@ -23,65 +23,52 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- *)
+ */
 
-open Lwt
-open Printf
+#include <sys/types.h>
+#include <sys/queue.h>
+#include <sys/socket.h>
 
+#include <net/if.h>
+#include <net/if_dl.h>
+#include <net/if_types.h>
+#include <net/vnet.h>
 
-type t = {
-    backend_id : int;
-    backend    : string;
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
+#include "caml/alloc.h"
+
+/* Currently only Ethernet interfaces are returned. */
+CAMLprim value kern_get_vifs(value v_unit);
+
+CAMLprim value
+kern_get_vifs(value v_unit)
+{
+	CAMLparam1(v_unit);
+	CAMLlocal2(result, r);
+	struct ifnet *ifp;
+	struct ifaddr *ifa;
+	struct sockaddr_dl *sdl;
+
+	result = Val_emptylist;
+	IFNET_RLOCK_NOSLEEP();
+	TAILQ_FOREACH(ifp, &V_ifnet, if_link) {
+		IF_ADDR_RLOCK(ifp);
+		TAILQ_FOREACH(ifa, &ifp->if_addrhead, ifa_link) {
+			sdl = (struct sockaddr_dl *) ifa->ifa_addr;
+			if (sdl != NULL && sdl->sdl_family == AF_LINK &&
+			    sdl->sdl_type == IFT_ETHER) {
+				/* We have a MAC address, add the interface. */
+				r = caml_alloc(2, 0);
+				Store_field(r, 0,
+				    caml_copy_string(ifp->if_xname));
+				Store_field(r, 1, result);
+				result = r;
+				break;
+			}
+		}
+		IF_ADDR_RUNLOCK(ifp);
+	}
+	IFNET_RUNLOCK_NOSLEEP();
+	CAMLreturn(result);
 }
-
-type id = string
-
-external get_vifs: unit -> id list = "kern_get_vifs"
-
-let plug id =
-  Console.log (sprintf "Netif.plug %s: not implemented yet" id);
-  lwt backend_id = return 0 in
-  lwt backend = return id in
-  let t = { backend_id; backend } in
-  return t
-
-let unplug id =
-  Console.log (sprintf "Netif.unplug %s: not implemented yet" id);
-  ()
-
-let create f =
-  Console.log (sprintf "Netif.create: not implemented yet");
-  return ()
-
-let write ifc page =
-  Console.log (sprintf "Netif.write %s: not implemented yet" ifc.backend);
-  return ()
-
-let writev ifc pages =
-  Console.log (sprintf "Netif.writev %s: not implemented yet" ifc.backend);
-  return ()
-
-let listen ifc fn =
-  Console.log (sprintf "Netif.listen %s: not implemented yet" ifc.backend);
-  return ()
-
-let enumerate () =
-  let vifs = get_vifs () in
-  let rec read_vif l acc = match l with
-    | []      -> return acc
-    | (x::xs) ->
-      lwt sid = return x in
-      read_vif xs (sid :: acc)
-  in
-  read_vif vifs []
-
-let mac ifc =
-  Console.log (sprintf "Netif.mac %s: not implemented yet" ifc.backend);
-  ""
-
-let ethid ifc =
-  string_of_int ifc.backend_id
-
-let get_writebuf ifc =
-  let page = Io_page.get() in
-  return page
