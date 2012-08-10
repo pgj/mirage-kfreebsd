@@ -58,6 +58,7 @@ kern_get_vifs(value v_unit)
 	struct ifaddr *ifa;
 	struct sockaddr_dl *sdl;
 
+	SDT_PROBE(mirage, kernel, kern_get_vifs, entry, 0, 0, 0, 0, 0);
 	result = Val_emptylist;
 	IFNET_RLOCK_NOSLEEP();
 	TAILQ_FOREACH(ifp, &V_ifnet, if_link) {
