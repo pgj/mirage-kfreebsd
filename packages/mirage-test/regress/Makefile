@@ -83,6 +83,11 @@ perf/gcperf:
 	echo "let _ = OS.Main.run (Gcperf.main ())" > main.ml
 	${MAKE} -f Makefile.kmod SRCS=gcperf.ml KMOD=mirage-perf-gcperf
 
+perf/io_page:
+	ln -sf perf/io_page.ml .
+	echo "let _ = OS.Main.run (Io_page.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=io_page.ml KMOD=mirage-perf-io_page
+
 perf/sieve:
 	ln -sf perf/sieve.ml .
 	echo "let _ = OS.Main.run (Sieve.main ())" > main.ml

@@ -78,3 +78,13 @@ mirage:kernel:alloc_pages:return
 {
     printf("<- %s()\n", probefunc);
 }
+
+mirage:kernel:io_page:contigmalloc
+{
+    printf("%p = %s:%s(%d)\n", arg1, probeprov,probefunc, arg0);
+}
+
+mirage:kernel:io_page:contigfree
+{
+    printf("%s:%s(%p,%d)\n", probeprov, probefunc, arg0, arg1);
+}
