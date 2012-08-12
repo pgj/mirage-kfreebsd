@@ -16,6 +16,9 @@
 #ifdef _KERNEL
 #include <sys/cdefs.h>
 #include <machine/stdarg.h>
+#include <sys/param.h>
+#include <sys/kernel.h>
+#include <sys/sdt.h>
 #else
 #include <stddef.h>
 #include <stdarg.h>
@@ -34,6 +37,18 @@
 #define uint8 caml_ba_uint8
 #define int16 caml_ba_int16
 #define uint16 caml_ba_uint16
+
+#ifdef _KERNEL
+SDT_PROVIDER_DECLARE(mirage);
+
+SDT_PROBE_DEFINE(mirage, kernel, io_page, contigfree, contigfree);
+SDT_PROBE_ARGTYPE(mirage, kernel, io_page, contigfree, 0, "void *");
+SDT_PROBE_ARGTYPE(mirage, kernel, io_page, contigfree, 1, "unsigned long");
+
+SDT_PROBE_DEFINE(mirage, kernel, io_page, refcount, refcount);
+SDT_PROBE_ARGTYPE(mirage, kernel, io_page, refcount, 0, "void *");
+SDT_PROBE_ARGTYPE(mirage, kernel, io_page, refcount, 1, "int");
+#endif
 
 CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim);
 CAMLprim value caml_ba_get_N(value vb, value * vind, int nind);
@@ -569,13 +584,19 @@ static void caml_ba_finalize(value v)
   case CAML_BA_MANAGED:
     if (b->proxy == NULL) {
 #ifdef _KERNEL
+      SDT_PROBE(mirage, kernel, io_page, contigfree, b->data, PAGE_SIZE, 0,
+          0, 0);
       contigfree(b->data, PAGE_SIZE, M_MIRAGE);
 #else
       free(b->data);
 #endif
     } else {
+      SDT_PROBE(mirage, kernel, io_page, refcount, b->proxy->data,
+            (int) b->proxy->refcount, 0, 0, 0);
       if (-- b->proxy->refcount == 0) {
 #ifdef _KERNEL
+        SDT_PROBE(mirage, kernel, io_page, contigfree, b->proxy->data,
+            PAGE_SIZE, 0, 0, 0);
         contigfree(b->proxy->data, PAGE_SIZE, M_MIRAGE);
 #else
         free(b->proxy->data);
