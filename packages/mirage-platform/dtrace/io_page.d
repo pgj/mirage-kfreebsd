@@ -4,15 +4,20 @@
 
 mirage:kernel:io_page:refcount
 {
-    printf("%s:%s(%p,%d)\n", probefunc,probename, arg0, arg1);
+    printf("%s:%s(%p,%d)\n", probefunc, probename, args[0], args[1]);
 }
 
-mirage:kernel:io_page:contigmalloc
+fbt:kernel:contigmalloc:entry
 {
-    printf("%s:%s(%p,%d)\n", probefunc,probename, arg1, arg0);
+    printf("%s:%s(%d)\n", probefunc, probename, args[0]);
 }
 
-mirage:kernel:io_page:contigfree
+fbt:kernel:contigmalloc:return
 {
-    printf("%s:%s(%p,%d)\n", probefunc, probename, arg0, arg1);
+    printf("%s:%s = %p\n", probefunc, probename, args[0]);
+}
+
+fbt:kernel:contigfree:entry
+{
+    printf("%s:%s(%p,%d)\n", probefunc, probename, args[0], args[1]);
 }

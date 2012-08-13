@@ -30,7 +30,6 @@
 #include <sys/socket.h>
 #include <sys/param.h>
 #include <sys/kernel.h>
-#include <sys/sdt.h>
 
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -40,11 +39,6 @@
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
 #include "caml/alloc.h"
-
-SDT_PROVIDER_DECLARE(mirage);
-
-SDT_PROBE_DEFINE(mirage, kernel, kern_get_vifs, entry, entry);
-SDT_PROBE_DEFINE(mirage, kernel, kern_get_vifs, return, return);
 
 /* Currently only Ethernet interfaces are returned. */
 CAMLprim value kern_get_vifs(value v_unit);
@@ -58,7 +52,6 @@ kern_get_vifs(value v_unit)
 	struct ifaddr *ifa;
 	struct sockaddr_dl *sdl;
 
-	SDT_PROBE(mirage, kernel, kern_get_vifs, entry, 0, 0, 0, 0, 0);
 	result = Val_emptylist;
 	IFNET_RLOCK_NOSLEEP();
 	TAILQ_FOREACH(ifp, &V_ifnet, if_link) {
@@ -79,6 +72,5 @@ kern_get_vifs(value v_unit)
 		IF_ADDR_RUNLOCK(ifp);
 	}
 	IFNET_RUNLOCK_NOSLEEP();
-	SDT_PROBE(mirage, kernel, kern_get_vifs, return, 0, 0, 0, 0, 0);
 	CAMLreturn(result);
 }

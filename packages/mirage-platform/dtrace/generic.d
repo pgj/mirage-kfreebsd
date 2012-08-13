@@ -2,24 +2,19 @@
 
 #pragma D option quiet
 
-mirage:kernel:kthread:entry
+fbt:mirage:mirage_kthread_body:entry
 {
     printf("-> %s()\n", probefunc);
 }
 
-mirage:kernel:kthread:return
+fbt:kernel:kthread_exit:entry
 {
-    printf("<- %s()\n", probefunc);
+    printf("<- mirage_kthread_body()\n");
 }
 
-mirage:kernel:caml_startup:start
+fbt:mirage:caml_startup:entry
 {
     printf("kernel thread activated, caml run-time starts\n");
-}
-
-mirage:kernel:caml_startup:finish
-{
-    printf("caml run-time finished\n");
 }
 
 mirage:kernel:kthread_loop:start
@@ -32,59 +27,7 @@ mirage:kernel:kthread_loop:stop
     printf("main loop exited: (%d,%d)\n", arg0, arg1);
 }
 
-mirage:kernel:kthread_init:entry
-{
-    printf("-> mirage_kthread_init()\n");
-}
-
-mirage:kernel:kthread_init:return
-{
-    printf("<- mirage_kthread_init()\n");
-}
-
-mirage:kernel:kthread_deinit:entry
-{
-    printf("-> mirage_kthread_deinit()\n");
-}
-
-mirage:kernel:kthread_deinit:return
-{
-    printf("<- mirage_kthread_deinit()\n");
-}
-
-mirage:kernel:kthread_launch:entry
-{
-    printf("-> mirage_kthread_launch()\n");
-}
-
-mirage:kernel:kthread_launch:return
-{
-    printf("<- mirage_kthread_launch()\n");
-}
-
-mirage:kernel:block_kernel:entry
+mirage:kernel:block:timeout
 {
     printf("blocking kernel for %d us\n", arg0);
-}
-
-mirage:kernel:block_kernel:return {}
-
-mirage:kernel:alloc_pages:entry
-{
-    printf("-> %s(%d)\n", probefunc, arg0);
-}
-
-mirage:kernel:alloc_pages:return
-{
-    printf("<- %s()\n", probefunc);
-}
-
-mirage:kernel:io_page:contigmalloc
-{
-    printf("%p = %s:%s(%d)\n", arg1, probeprov,probefunc, arg0);
-}
-
-mirage:kernel:io_page:contigfree
-{
-    printf("%s:%s(%p,%d)\n", probeprov, probefunc, arg0, arg1);
 }

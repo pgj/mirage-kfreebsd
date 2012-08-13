@@ -54,22 +54,10 @@ static char* argv[] = { "mirage", NULL };
 MALLOC_DEFINE(M_MIRAGE, "mirage", "Mirage run-time");
 SDT_PROVIDER_DEFINE(mirage);
 
-SDT_PROBE_DEFINE(mirage, kernel, kthread, entry, entry);
-SDT_PROBE_DEFINE(mirage, kernel, kthread, return, return);
-SDT_PROBE_DEFINE(mirage, kernel, caml_startup, start, start);
-SDT_PROBE_DEFINE(mirage, kernel, caml_startup, finish, finish);
-SDT_PROBE_DEFINE(mirage, kernel, kthread_init, entry, entry);
-SDT_PROBE_DEFINE(mirage, kernel, kthread_init, return, return);
-SDT_PROBE_ARGTYPE(mirage, kernel, kthread_init, return, 0, "int");
-SDT_PROBE_DEFINE(mirage, kernel, kthread_deinit, entry, entry);
-SDT_PROBE_DEFINE(mirage, kernel, kthread_deinit, return, return);
 SDT_PROBE_DEFINE(mirage, kernel, kthread_loop, start, start);
 SDT_PROBE_DEFINE(mirage, kernel, kthread_loop, stop, stop);
-SDT_PROBE_DEFINE(mirage, kernel, kthread_launch, entry, entry);
-SDT_PROBE_DEFINE(mirage, kernel, kthread_launch, return, return);
-SDT_PROBE_DEFINE(mirage, kernel, block_kernel, entry, entry);
-SDT_PROBE_ARGTYPE(mirage, kernel, block_kernel, entry, 0, "int");
-SDT_PROBE_DEFINE(mirage, kernel, block_kernel, return, return);
+SDT_PROBE_DEFINE(mirage, kernel, block, timeout, timeout);
+SDT_PROBE_ARGTYPE(mirage, kernel, block, timeout, 0, "int");
 
 static SYSCTL_NODE(_kern, OID_AUTO, mirage, CTLFLAG_RD, NULL, "mirage");
 
@@ -90,10 +78,7 @@ mirage_kthread_body(void *arg __unused)
 	int caml_completed = 0;
 
 	mirage_kthread_state = THR_RUNNING;
-	SDT_PROBE(mirage, kernel, kthread, entry, 0, 0, 0, 0, 0);
-	SDT_PROBE(mirage, kernel, caml_startup, start, 0, 0, 0, 0, 0);
 	caml_startup(argv);
-	SDT_PROBE(mirage, kernel, caml_startup, finish, 0, 0, 0, 0, 0);
 	v_main = caml_named_value("OS.Main.run");
 
 	if (v_main == NULL) {
@@ -112,7 +97,6 @@ done:
 	if (mirage_kthread_state == THR_STOPPED)
 		wakeup(&mirage_kthread_state);
 	mirage_kthread_state = THR_NONE;
-	SDT_PROBE(mirage, kernel, kthread, return, 0, 0, 0, 0, 0);
 	kthread_exit();
 }
 
@@ -121,7 +105,6 @@ mirage_kthread_init(void)
 {
 	int error;
 
-	SDT_PROBE(mirage, kernel, kthread_init, entry, 0, 0, 0, 0, 0);
 	error = kthread_add(mirage_kthread_body, NULL, NULL, &mirage_kthread,
 	    RFSTOPPED, 40, "mirage");
 	mirage_kthread_state = THR_STOPPED;
@@ -131,34 +114,29 @@ mirage_kthread_init(void)
 	}
 
 done:
-	SDT_PROBE(mirage, kernel, kthread_init, return, error, 0, 0, 0, 0);
 	return error;
 }
 
 static int
 mirage_kthread_deinit(void)
 {
-	SDT_PROBE(mirage, kernel, kthread_deinit, entry, 0, 0, 0, 0, 0);
 	if (mirage_kthread_state == THR_RUNNING) {
 		mirage_kthread_state = THR_STOPPED;
 		tsleep((void *) &mirage_kthread_state, 0,
 		    "mirage_kthread_deinit", 0);
 		pause("mirage_kthread_deinit", 1);
 	}
-	SDT_PROBE(mirage, kernel, kthread_deinit, return, 0, 0, 0, 0, 0);
 	return 0;
 }
 
 static void
 mirage_kthread_launch(void)
 {
-	SDT_PROBE(mirage, kernel, kthread_launch, entry, 0, 0, 0, 0, 0);
 	thread_lock(mirage_kthread);
 	sched_add(mirage_kthread, SRQ_BORING);
 	sched_class(mirage_kthread, PRI_TIMESHARE);
 	sched_prio(mirage_kthread, PRI_MAX_IDLE);
 	thread_unlock(mirage_kthread);
-	SDT_PROBE(mirage, kernel, kthread_launch, return, 0, 0, 0, 0, 0);
 }
 
 static int
@@ -229,8 +207,7 @@ caml_block_kernel(value v_timeout)
 	CAMLparam1(v_timeout);
 
 	block_timo = Int_val(v_timeout);
-	SDT_PROBE(mirage, kernel, block_kernel, entry, block_timo, 0, 0, 0, 0);
+	SDT_PROBE(mirage, kernel, block, timeout, block_timo, 0, 0, 0, 0);
 	pause("caml_block_kernel", (block_timo * hz) / 1000000);
-	SDT_PROBE(mirage, kernel, block_kernel, return, 0, 0, 0, 0, 0);
 	CAMLreturn(Val_unit);
 }

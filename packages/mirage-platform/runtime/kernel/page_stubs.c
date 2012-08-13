@@ -37,14 +37,6 @@
 #include "caml/fail.h"
 #include "caml/bigarray.h"
 
-SDT_PROVIDER_DECLARE(mirage);
-
-SDT_PROBE_DEFINE(mirage, kernel, alloc_pages, entry, entry);
-SDT_PROBE_ARGTYPE(mirage, kernel, alloc_pages, entry, 0, "size_t");
-SDT_PROBE_DEFINE(mirage, kernel, alloc_pages, return, return);
-SDT_PROBE_DEFINE(mirage, kernel, io_page, contigmalloc, contigmalloc);
-SDT_PROBE_ARGTYPE(mirage, kernel, io_page, contigmalloc, 0, "size_t");
-SDT_PROBE_ARGTYPE(mirage, kernel, io_page, contigmalloc, 1, "unsigned long");
 
 CAMLprim value caml_alloc_pages(value n_pages);
 
@@ -58,10 +50,8 @@ caml_alloc_pages(value n_pages)
 	unsigned long block;
 
 	len = Int_val(n_pages);
-	SDT_PROBE(mirage, kernel, alloc_pages, entry, len, 0, 0, 0, 0);
 	block = (unsigned long) contigmalloc(PAGE_SIZE * len, M_MIRAGE,
 	    M_NOWAIT, 0, 0xffffffff, PAGE_SIZE, 0ul);
-	SDT_PROBE(mirage, kernel, io_page, contigmalloc, PAGE_SIZE * len, block, 0, 0, 0);
 	if (block == 0)
 		caml_failwith("contigmalloc");
 	result = caml_alloc(len, 0);
@@ -71,6 +61,5 @@ caml_alloc_pages(value n_pages)
 		Store_field(result, i, page);
 		block += (PAGE_SIZE / sizeof(unsigned long));
 	};
-	SDT_PROBE(mirage, kernel, alloc_pages, return, 0, 0, 0, 0, 0);
 	CAMLreturn(result);
 }

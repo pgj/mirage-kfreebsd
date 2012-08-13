@@ -41,10 +41,6 @@
 #ifdef _KERNEL
 SDT_PROVIDER_DECLARE(mirage);
 
-SDT_PROBE_DEFINE(mirage, kernel, io_page, contigfree, contigfree);
-SDT_PROBE_ARGTYPE(mirage, kernel, io_page, contigfree, 0, "void *");
-SDT_PROBE_ARGTYPE(mirage, kernel, io_page, contigfree, 1, "unsigned long");
-
 SDT_PROBE_DEFINE(mirage, kernel, io_page, refcount, refcount);
 SDT_PROBE_ARGTYPE(mirage, kernel, io_page, refcount, 0, "void *");
 SDT_PROBE_ARGTYPE(mirage, kernel, io_page, refcount, 1, "int");
@@ -584,8 +580,6 @@ static void caml_ba_finalize(value v)
   case CAML_BA_MANAGED:
     if (b->proxy == NULL) {
 #ifdef _KERNEL
-      SDT_PROBE(mirage, kernel, io_page, contigfree, b->data, PAGE_SIZE, 0,
-          0, 0);
       contigfree(b->data, PAGE_SIZE, M_MIRAGE);
 #else
       free(b->data);
@@ -595,8 +589,6 @@ static void caml_ba_finalize(value v)
             (int) b->proxy->refcount, 0, 0, 0);
       if (-- b->proxy->refcount == 0) {
 #ifdef _KERNEL
-        SDT_PROBE(mirage, kernel, io_page, contigfree, b->proxy->data,
-            PAGE_SIZE, 0, 0, 0);
         contigfree(b->proxy->data, PAGE_SIZE, M_MIRAGE);
 #else
         free(b->proxy->data);
