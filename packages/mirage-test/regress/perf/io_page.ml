@@ -10,17 +10,17 @@ let with_time i label fn =
 
 let main () =
   Random.self_init ();
-  let page_size = 4096 in
-  let sizes = [ 1; 2; 4; 8; 16; 32; 64; 128; 256; 512 ] in
+  let sizes = [ 1; 2; 4; 8; 16; 32; 64; 128 ] in
   List.iter (fun sz ->
     with_time sz sz (fun () ->
-      for i = 0 to 1000 do
-        let ts = OS.Io_page.get_n sz in
-        for j  = 0 to (sz * 100) do
+      for i = 0 to 10000 do
+        let p = OS.Io_page.get ~pages_per_block:sz () in
+        let page_size = OS.Io_page.length p in
+        for j  = 0 to (sz * 10) do
           let off = Random.int page_size in
           let len = Random.int (page_size - off) in
           let k   = Random.int sz in
-          let _   = OS.Io_page.sub (List.nth ts k) off len in
+          let _   = OS.Io_page.sub p off len in
           ()
         done;
       done;

@@ -44,8 +44,7 @@ CAMLprim value
 caml_alloc_pages(value n_pages)
 {
 	CAMLparam1(n_pages);
-	CAMLlocal2(page, result);
-	int i;
+	CAMLlocal1(result);
 	size_t len;
 	unsigned long block;
 
@@ -54,12 +53,7 @@ caml_alloc_pages(value n_pages)
 	    M_NOWAIT, 0, 0xffffffff, PAGE_SIZE, 0ul);
 	if (block == 0)
 		caml_failwith("contigmalloc");
-	result = caml_alloc(len, 0);
-	for (i = 0; i < len; i++) {
-		page = caml_ba_alloc_dims(CAML_BA_UINT8 | CAML_BA_C_LAYOUT
-		    | CAML_BA_MANAGED, 1, (void *) block, (long) PAGE_SIZE);
-		Store_field(result, i, page);
-		block += (PAGE_SIZE / sizeof(unsigned long));
-	};
+	result = caml_ba_alloc_dims(CAML_BA_UINT8 | CAML_BA_C_LAYOUT
+	    | CAML_BA_MANAGED, 1, (void *) block, (long) PAGE_SIZE * len);
 	CAMLreturn(result);
 }

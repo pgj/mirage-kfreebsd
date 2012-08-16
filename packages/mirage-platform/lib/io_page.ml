@@ -1,43 +1,60 @@
-(*-
+(*
+ * Copyright (c) 2011-2012 Anil Madhavapeddy <anil@recoil.org>
  * Copyright (c) 2012 Gabor Pali
- * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
 open Bigarray
 
 type t = (char, int8_unsigned_elt, c_layout) Array1.t
 
-external alloc_pages: int -> t array = "caml_alloc_pages"
+external alloc_pages: int -> t = "caml_alloc_pages"
 
 let page_size = 4096
 
-let get () = Array.get (alloc_pages 1) 0
+let free_lists = Hashtbl.create 10
 
-let rec get_n = function
+let get_free_list pages_per_block : t Queue.t =
+  if not (Hashtbl.mem free_lists pages_per_block)
+    then Hashtbl.add free_lists pages_per_block (Queue.create ());
+  Hashtbl.find free_lists pages_per_block
+
+let alloc ~pages_per_block ~n_blocks =
+  let q = get_free_list pages_per_block in
+  for i = 0 to (n_blocks - 1) do
+    Queue.add (alloc_pages pages_per_block) q;
+  done
+
+let get ?(pages_per_block = 1) () =
+  let q = get_free_list pages_per_block in
+  let rec inner () =
+    try
+      let block = Queue.pop q in
+      let fin p = Queue.add p q in
+      Gc.finalise fin block;
+      block
+    with
+      Queue.Empty -> begin
+        alloc ~pages_per_block ~n_blocks:8;
+        inner ()
+      end
+  in
+  inner ()
+
+let rec get_n ?(pages_per_block = 1) n = match n with
   | 0 -> []
-  | n -> get () :: (get_n (n - 1))
+  | n -> get () :: (get_n ~pages_per_block (n - 1))
 
 let sub t off len = Array1.sub t off len
 

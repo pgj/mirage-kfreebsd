@@ -573,6 +573,9 @@ CAMLprim value caml_ba_layout(value vb)
 static void caml_ba_finalize(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
+#ifdef _KERNEL
+  int data_size, i;
+#endif
 
   switch (b->flags & CAML_BA_MANAGED_MASK) {
   case CAML_BA_EXTERNAL:
@@ -580,7 +583,10 @@ static void caml_ba_finalize(value v)
   case CAML_BA_MANAGED:
     if (b->proxy == NULL) {
 #ifdef _KERNEL
-      contigfree(b->data, PAGE_SIZE, M_MIRAGE);
+      data_size = 0;
+      for (i = 0; i < b->num_dims; i++)
+          data_size += b->dim[i];
+      contigfree(b->data, data_size, M_MIRAGE);
 #else
       free(b->data);
 #endif
@@ -589,7 +595,7 @@ static void caml_ba_finalize(value v)
             (int) b->proxy->refcount, 0, 0, 0);
       if (-- b->proxy->refcount == 0) {
 #ifdef _KERNEL
-        contigfree(b->proxy->data, PAGE_SIZE, M_MIRAGE);
+        contigfree(b->proxy->data, b->proxy->size, M_MIRAGE);
 #else
         free(b->proxy->data);
 #endif

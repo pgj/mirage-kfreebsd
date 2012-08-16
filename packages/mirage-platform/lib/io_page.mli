@@ -16,8 +16,8 @@
 
 type t = (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-val get : unit -> t
-val get_n : int -> t list
+val get : ?pages_per_block:int -> unit -> t
+val get_n : ?pages_per_block:int -> int -> t list
 
 val sub : t -> int -> int -> t
 val length : t -> int
