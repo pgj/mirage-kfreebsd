@@ -32,5 +32,7 @@ dispatch begin function
 	(S[A "-I"; A (query "cstruct")]);
     flag ["ocaml"; "pp"; "use_lwt_syntax"]
 	(S[A "-I"; A (query "lwt"); A "lwt-syntax-options.cma"; A "lwt-syntax.cma"]);
+    flag ["ocaml"; "pp"; "use_cstruct"]
+	(S[A "-I"; A (query "cstruct"); A "cstruct-syntax.cma"]);
 | _ -> ()
 end;;

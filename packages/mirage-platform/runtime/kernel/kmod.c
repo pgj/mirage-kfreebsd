@@ -39,7 +39,7 @@
 #include <sys/systm.h>
 #include <sys/malloc.h>
 #include <sys/sysctl.h>
-#include <sys/kernel.h>
+#include <sys/mbuf.h>
 #include <sys/sdt.h>
 
 #include "caml/mlvalues.h"
@@ -68,32 +68,44 @@ enum thread_state {
 };
 
 static enum thread_state mirage_kthread_state = THR_NONE;
-
 static struct thread *mirage_kthread = NULL;
+
+/* netgraph node hooks stolen from ng_ether(4) */
+extern void (*ng_ether_input_p)(struct ifnet *ifp, struct mbuf **mp);
+extern int  (*ng_ether_output_p)(struct ifnet *ifp, struct mbuf **mp);
+void netif_ether_input(struct ifnet *ifp, struct mbuf **mp);
+int  netif_ether_output(struct ifnet *ifp, struct mbuf **mp);
+
 
 static void
 mirage_kthread_body(void *arg __unused)
 {
-	value *v_main;
+	value *v_f;
 	int caml_completed = 0;
 
 	mirage_kthread_state = THR_RUNNING;
 	caml_startup(argv);
-	v_main = caml_named_value("OS.Main.run");
+	v_f = caml_named_value("OS.Main.run");
 
-	if (v_main == NULL) {
+	if (v_f == NULL) {
 		printf("[MIRAGE] Function 'OS.Main.run' could not be found.\n");
 		goto done;
 	}
 
 	SDT_PROBE(mirage, kernel, kthread_loop, start, 0, 0, 0, 0, 0);
 	for (; (caml_completed == 0) && (mirage_kthread_state == THR_RUNNING);) {
-		caml_completed = Bool_val(caml_callback(*v_main, Val_unit));
+		caml_completed = Bool_val(caml_callback(*v_f, Val_unit));
 	}
 	SDT_PROBE(mirage, kernel, kthread_loop, stop, caml_completed,
 	    (int) mirage_kthread_state, 0, 0, 0);
 
 done:
+	v_f = caml_named_value("OS.Main.finalize");
+
+	if (v_f != NULL) {
+		caml_callback(*v_f, Val_unit);
+	}
+
 	if (mirage_kthread_state == THR_STOPPED)
 		wakeup(&mirage_kthread_state);
 	mirage_kthread_state = THR_NONE;
@@ -178,10 +190,18 @@ event_handler(struct module *module, int event, void *arg) {
 	switch (event) {
 	case MOD_LOAD:
 		printf("[MIRAGE] Kernel module is about to load.\n");
+		if (ng_ether_input_p != NULL || ng_ether_output_p != NULL) {
+			printf("[MIRAGE] ng_ether(4) is in use, please disable it.\n");
+			retval = EEXIST;
+		}
+		ng_ether_input_p  = netif_ether_input;
+		ng_ether_output_p = netif_ether_output;
 		break;
 	case MOD_UNLOAD:
 		printf("[MIRAGE] Kernel module is about to unload.\n");
 		retval = mirage_kthread_deinit();
+		ng_ether_input_p  = NULL;
+		ng_ether_output_p = NULL;
 		break;
 	default:
 		retval = EOPNOTSUPP;

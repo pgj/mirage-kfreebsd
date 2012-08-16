@@ -48,5 +48,11 @@ let run t =
       (let t   = Printexc.to_string exn in
        let msg = Printf.sprintf "Top-level exception: \"%s\"!" t in
        prerr_endline msg;
-      true) in
-  ignore (Callback.register "OS.Main.run" aux)
+      true)
+  in
+  let finalize () =
+    Lwt.cancel t;
+    Gc.compact ()
+  in
+  ignore (Callback.register "OS.Main.run" aux);
+  ignore (Callback.register "OS.Main.finalize" finalize)
