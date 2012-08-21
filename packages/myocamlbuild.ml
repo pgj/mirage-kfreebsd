@@ -30,9 +30,15 @@ dispatch begin function
 	(S[A "-nostdlib"; A "-I"; A (query "mirage-stdlib")]);
     flag ["compile"; "use_cstruct"]
 	(S[A "-I"; A (query "cstruct")]);
-    flag ["ocaml"; "pp"; "use_lwt_syntax"]
+    flag ["compile"; "use_lwt"]
+	(S[A "-I"; A (query "lwt")]);
+    flag ["compile"; "use_os"]
+	(S[A "-I"; A (query "mirage-platform")]);
+    flag ["ocaml"; "pp"; "use_lwt"]
 	(S[A "-I"; A (query "lwt"); A "lwt-syntax-options.cma"; A "lwt-syntax.cma"]);
     flag ["ocaml"; "pp"; "use_cstruct"]
 	(S[A "-I"; A (query "cstruct"); A "cstruct-syntax.cma"]);
+    pflag ["ocaml"; "pack"] "for-repack"
+	(fun param -> S [A "-for-pack"; A param]);
 | _ -> ()
 end;;
