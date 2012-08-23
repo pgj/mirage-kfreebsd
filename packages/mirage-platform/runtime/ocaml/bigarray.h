@@ -65,7 +65,12 @@ enum caml_ba_managed {
   CAML_BA_EXTERNAL = 0,        /* Data is not allocated by Caml */
   CAML_BA_MANAGED = 0x200,     /* Data is allocated by Caml */
   CAML_BA_MAPPED_FILE = 0x400, /* Data is a memory mapped file */
+#ifdef _KERNEL
+  CAML_BA_MBUF = 0x800,        /* Data is a FreeBSD mbuf(9) */
+  CAML_BA_MANAGED_MASK = 0xE00 /* Mask for "managed" bits in flags field */
+#else
   CAML_BA_MANAGED_MASK = 0x600 /* Mask for "managed" bits in flags field */
+#endif
 };
 
 struct caml_ba_proxy {
@@ -76,6 +81,9 @@ struct caml_ba_proxy {
 
 struct caml_ba_array {
   void * data;                /* Pointer to raw data */
+#ifdef _KERNEL
+  struct mbuf * m;            /* Encapsulating mbuf(9) or NULL */
+#endif
   intnat num_dims;            /* Number of dimensions */
   intnat flags;  /* Kind of element array + memory layout + allocation status */
   struct caml_ba_proxy * proxy; /* The proxy for sub-arrays, or NULL */

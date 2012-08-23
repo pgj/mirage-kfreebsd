@@ -17,7 +17,9 @@
 #include <sys/cdefs.h>
 #include <machine/stdarg.h>
 #include <sys/param.h>
+#include <sys/systm.h>
 #include <sys/kernel.h>
+#include <sys/mbuf.h>
 #include <sys/sdt.h>
 #else
 #include <stddef.h>
@@ -226,7 +228,18 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
                           + (num_dims - 1) * sizeof(intnat),
                           size, CAML_BA_MAX_MEMORY);
   b = Caml_ba_array_val(res);
+#ifdef _KERNEL
+  if ((flags & CAML_BA_MANAGED_MASK) == CAML_BA_MBUF) {
+    b->m    = (struct mbuf *) data;
+    b->data = mtod(b->m, void *);
+  }
+  else {
+    b->m    = NULL;
+    b->data = data;
+  }
+#else
   b->data = data;
+#endif
   b->num_dims = num_dims;
   b->flags = flags;
   b->proxy = NULL;
@@ -606,6 +619,11 @@ static void caml_ba_finalize(value v)
   case CAML_BA_MAPPED_FILE:
     caml_failwith("CAML_BA_MAPPED_FILE: unsupported");
     break;
+#ifdef _KERNEL
+  case CAML_BA_MBUF:
+    m_free(b->m);
+    break;
+#endif
   }
 }
 

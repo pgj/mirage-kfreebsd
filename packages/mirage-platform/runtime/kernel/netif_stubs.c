@@ -29,12 +29,13 @@
 #include <sys/queue.h>
 #include <sys/socket.h>
 #include <sys/param.h>
-#include <sys/mbuf.h>
 #include <sys/kernel.h>
 #include <sys/malloc.h>
 #include <sys/systm.h>
+#include <sys/mbuf.h>
 #include <sys/libkern.h>
-#include <sys/sdt.h>
+#include <sys/lock.h>
+#include <sys/mutex.h>
 
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -48,25 +49,9 @@
 #include "caml/fail.h"
 #include "caml/bigarray.h"
 
-#define MBUF_LEN(mb)	((mb)->m_pkthdr.len)
-
-SDT_PROVIDER_DECLARE(mirage);
-
-SDT_PROBE_DEFINE(mirage, kernel, netif, plug_vif, plug_vif);
-SDT_PROBE_ARGTYPE(mirage, kernel, netif, plug_vif, 0, "int");
-SDT_PROBE_ARGTYPE(mirage, kernel, netif, plug_vif, 1, "int");
-
-
-struct sring_hdr {
-	uint16_t	sr_cur;
-	uint16_t	sr_avail;
-	uint16_t	sr_size;
-	uint16_t	sr_slotsize;
-	uint8_t		sr_pad[56];
-};
-
-struct sslot {
-	uint16_t	ss_len;
+struct mbuf_entry {
+	LIST_ENTRY(mbuf_entry)	me_next;
+	struct mbuf		*me_m;
 };
 
 struct plugged_if {
@@ -76,7 +61,8 @@ struct plugged_if {
 	int	pi_flags;
 	char	pi_lladdr[32];
 	char	pi_xname[IFNAMSIZ];
-	void	*pi_rx;
+	struct  mtx			pi_rx_lock;
+	LIST_HEAD(, mbuf_entry)		pi_rx_head;
 };
 
 TAILQ_HEAD(plugged_ifhead, plugged_if) pihead =
@@ -87,12 +73,35 @@ int plugged = 0;
 
 /* Currently only Ethernet interfaces are returned. */
 CAMLprim value caml_get_vifs(value v_unit);
-CAMLprim value caml_plug_vif(value id, value rxring);
+CAMLprim value caml_plug_vif(value id);
 CAMLprim value caml_unplug_vif(value id);
+CAMLprim value caml_get_mbufs(value id);
 
 void netif_ether_input(struct ifnet *ifp, struct mbuf **mp);
 int  netif_ether_output(struct ifnet *ifp, struct mbuf **mp);
 
+
+static struct plugged_if *
+find_pi_by_index(u_short val)
+{
+	struct plugged_if *pip;
+
+	TAILQ_FOREACH(pip, &pihead, pi_next)
+		if (pip->pi_index == val)
+			return pip;
+	return NULL;
+}
+
+static struct plugged_if *
+find_pi_by_name(const char *val)
+{
+	struct plugged_if *pip;
+
+	TAILQ_FOREACH(pip, &pihead, pi_next)
+		if (strncmp(pip->pi_xname, val, IFNAMSIZ) == 0)
+			return pip;
+	return NULL;
+}
 
 CAMLprim value
 caml_get_vifs(value v_unit)
@@ -103,8 +112,7 @@ caml_get_vifs(value v_unit)
 	struct ifaddr *ifa;
 	struct sockaddr_dl *sdl;
 
-	result = Val_emptylist
-	CURVNET_SET(TD_TO_VNET(curthread));;
+	result = Val_emptylist;
 	IFNET_RLOCK_NOSLEEP();
 	TAILQ_FOREACH(ifp, &V_ifnet, if_link) {
 		IF_ADDR_RLOCK(ifp);
@@ -124,14 +132,13 @@ caml_get_vifs(value v_unit)
 		IF_ADDR_RUNLOCK(ifp);
 	}
 	IFNET_RUNLOCK_NOSLEEP();
-	CURVNET_RESTORE();
 	CAMLreturn(result);
 }
 
 CAMLprim value
-caml_plug_vif(value id, value rxring)
+caml_plug_vif(value id)
 {
-	CAMLparam2(id, rxring);
+	CAMLparam1(id);
 	CAMLlocal1(result);
 	struct ifnet *ifp;
 	struct ifaddr *ifa;
@@ -140,13 +147,12 @@ caml_plug_vif(value id, value rxring)
 	int found;
 	u_char lladdr[8];
 
-	pip = malloc(sizeof(struct plugged_if), M_MIRAGE, M_NOWAIT);
+	pip = malloc(sizeof(struct plugged_if), M_MIRAGE, M_NOWAIT | M_ZERO);
 
 	if (pip == NULL)
 		caml_failwith("Out of memory");
 
 	found = 0;
-	CURVNET_SET(TD_TO_VNET(curthread));
 	IFNET_WLOCK();
 	TAILQ_FOREACH(ifp, &V_ifnet, if_link) {
 		IF_ADDR_RLOCK(ifp);
@@ -173,7 +179,6 @@ caml_plug_vif(value id, value rxring)
 		IF_ADDR_RUNLOCK(ifp);
 	}
 	IFNET_WUNLOCK();
-	CURVNET_RESTORE();
 
 	if (!found) {
 		free(pip, M_MIRAGE);
@@ -183,11 +188,8 @@ caml_plug_vif(value id, value rxring)
 	sprintf(pip->pi_lladdr, "%02x:%02x:%02x:%02x:%02x:%02x", lladdr[0],
 	    lladdr[1], lladdr[2], lladdr[3], lladdr[4], lladdr[5]);
 
-	pip->pi_rx = Caml_ba_data_val(rxring);
-
-	SDT_PROBE(mirage, kernel, netif, plug_vif,
-	    ((struct sring_hdr *) pip->pi_rx)->sr_size,
-	    ((struct sring_hdr *) pip->pi_rx)->sr_slotsize, 0, 0, 0);
+	mtx_init(&pip->pi_rx_lock, "plugged_if_rx", NULL, MTX_DEF);
+	LIST_INIT(&pip->pi_rx_head);
 
 	if (plugged == 0)
 		TAILQ_INIT(&pihead);
@@ -208,20 +210,12 @@ caml_unplug_vif(value id)
 	CAMLparam1(id);
 	struct plugged_if *pip;
 	struct ifnet *ifp;
-	int found;
+	struct mbuf_entry *e1, *e2;
 
-	found = 0;
-	TAILQ_FOREACH(pip, &pihead, pi_next) {
-		if (strncmp(pip->pi_xname, String_val(id), IFNAMSIZ) == 0) {
-			found = 1;
-			break;
-		}
-	}
-
-	if (!found)
+	pip = find_pi_by_name(String_val(id));
+	if (pip == NULL)
 		CAMLreturn(Val_unit);
 
-	CURVNET_SET(TD_TO_VNET(curthread));
 	IFNET_WLOCK();
 	TAILQ_FOREACH(ifp, &V_ifnet, if_link) {
 		if (strncmp(ifp->if_xname, String_val(id), IFNAMSIZ) == 0) {
@@ -231,47 +225,98 @@ caml_unplug_vif(value id)
 		}
 	}
 	IFNET_WUNLOCK();
-	CURVNET_RESTORE();
+
+	mtx_lock(&pip->pi_rx_lock);
+	e1 = LIST_FIRST(&pip->pi_rx_head);
+	while (e1 != NULL) {
+		e2 = LIST_NEXT(e1, me_next);
+		m_free(e1->me_m);
+		free(e1, M_MIRAGE);
+		e1 = e2;
+	}
+	LIST_INIT(&pip->pi_rx_head);
+	mtx_unlock(&pip->pi_rx_lock);
 
 	TAILQ_REMOVE(&pihead, pip, pi_next);
+	mtx_destroy(&pip->pi_rx_lock);
 	free(pip, M_MIRAGE);
 	plugged--;
 
 	CAMLreturn(Val_unit);
 }
 
+static void
+netif_add_mbuf(struct plugged_if *pip, struct mbuf *m)
+{
+	struct mbuf_entry *e;
+	struct mbuf *sm;
+
+	for (sm = m; sm != NULL; sm = sm->m_next) {
+		e = (struct mbuf_entry *) malloc(sizeof(struct mbuf_entry),
+		    M_MIRAGE, M_NOWAIT);
+		e->me_m = sm;
+		mtx_lock(&pip->pi_rx_lock);
+		LIST_INSERT_HEAD(&pip->pi_rx_head, e, me_next);
+		mtx_unlock(&pip->pi_rx_lock);
+	}
+}
+
 /* Listening to incoming Ethernet frames. */
 void
 netif_ether_input(struct ifnet *ifp, struct mbuf **mp)
 {
-	u_int len;
 	struct plugged_if *pip;
-	struct sring_hdr *h;
-	struct sslot *s;
-	char *r;
-	int i, sz;
+	struct mbuf *m;
 
 	if (plugged == 0)
 		return;
 
-	TAILQ_FOREACH(pip, &pihead, pi_next) {
-		if (ifp->if_index == pip->pi_index) {
-			h = pip->pi_rx;
-			sz = (h->sr_size - 1);
-			i = (h->sr_cur + h->sr_avail) & sz;
-			r = (char *) pip->pi_rx + (h->sr_size *
-			    sizeof(struct sslot)) + (i * h->sr_slotsize);
-			len = MBUF_LEN(*mp);
-			s = (struct sslot *) ((char *) pip->pi_rx +
-			    sizeof(struct sring_hdr));
-			s[i].ss_len = len;
-			m_copydata(*mp, 0, len, r);
-			h->sr_avail++;
-			m_freem(*mp);
-			*mp = NULL;
-			break;
-		}
+	pip = find_pi_by_index(ifp->if_index);
+	if (pip != NULL) {
+		for (m = *mp; m != NULL; m = m->m_nextpkt)
+			netif_add_mbuf(pip, m);
+		*mp = NULL;
 	}
+}
+
+CAMLprim value
+caml_get_mbufs(value id)
+{
+	CAMLparam1(id);
+	CAMLlocal2(result, r);
+	struct plugged_if *pip;
+	struct mbuf_entry *e1, *e2;
+	struct mbuf *m;
+	long len;
+
+	result = Val_emptylist;
+
+	if (plugged == 0)
+		CAMLreturn(result);
+
+	pip = find_pi_by_index(Int_val(id));
+	if (pip == NULL)
+		CAMLreturn(result);
+
+	mtx_lock(&pip->pi_rx_lock);
+	e1 = LIST_FIRST(&pip->pi_rx_head);
+	while (e1 != NULL) {
+		m = e1->me_m;
+		len = m->m_len;
+		r = caml_alloc(2, 0);
+		Store_field(r, 0,
+		    caml_ba_alloc_dims(CAML_BA_UINT8 | CAML_BA_C_LAYOUT
+		    | CAML_BA_MBUF, 1, (void *) m, len));
+		Store_field(r, 1, result);
+		e2 = LIST_NEXT(e1, me_next);
+		free(e1, M_MIRAGE);
+		e1 = e2;
+		result = r;
+	}
+	LIST_INIT(&pip->pi_rx_head);
+	mtx_unlock(&pip->pi_rx_lock);
+
+	CAMLreturn(result);
 }
 
 /* Generating outgoing Ethernet data. */
