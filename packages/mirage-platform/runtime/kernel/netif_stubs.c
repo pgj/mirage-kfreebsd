@@ -210,7 +210,8 @@ caml_unplug_vif(value id)
 	CAMLparam1(id);
 	struct plugged_if *pip;
 	struct ifnet *ifp;
-	struct mbuf_entry *e1, *e2;
+	struct mbuf_entry *e1;
+	struct mbuf_entry *e2;
 
 	pip = find_pi_by_name(String_val(id));
 	if (pip == NULL)
@@ -230,7 +231,7 @@ caml_unplug_vif(value id)
 	e1 = LIST_FIRST(&pip->pi_rx_head);
 	while (e1 != NULL) {
 		e2 = LIST_NEXT(e1, me_next);
-		m_free(e1->me_m);
+		m_freem(e1->me_m);
 		free(e1, M_MIRAGE);
 		e1 = e2;
 	}
@@ -245,38 +246,27 @@ caml_unplug_vif(value id)
 	CAMLreturn(Val_unit);
 }
 
-static void
-netif_add_mbuf(struct plugged_if *pip, struct mbuf *m)
-{
-	struct mbuf_entry *e;
-	struct mbuf *sm;
-
-	for (sm = m; sm != NULL; sm = sm->m_next) {
-		e = (struct mbuf_entry *) malloc(sizeof(struct mbuf_entry),
-		    M_MIRAGE, M_NOWAIT);
-		e->me_m = sm;
-		mtx_lock(&pip->pi_rx_lock);
-		LIST_INSERT_HEAD(&pip->pi_rx_head, e, me_next);
-		mtx_unlock(&pip->pi_rx_lock);
-	}
-}
-
 /* Listening to incoming Ethernet frames. */
 void
 netif_ether_input(struct ifnet *ifp, struct mbuf **mp)
 {
 	struct plugged_if *pip;
-	struct mbuf *m;
+	struct mbuf_entry *e;
 
 	if (plugged == 0)
 		return;
 
 	pip = find_pi_by_index(ifp->if_index);
-	if (pip != NULL) {
-		for (m = *mp; m != NULL; m = m->m_nextpkt)
-			netif_add_mbuf(pip, m);
-		*mp = NULL;
-	}
+	if (pip == NULL)
+		return;
+
+	e = (struct mbuf_entry *) malloc(sizeof(struct mbuf_entry), M_MIRAGE,
+	    M_NOWAIT);
+	e->me_m = *mp;
+	mtx_lock(&pip->pi_rx_lock);
+	LIST_INSERT_HEAD(&pip->pi_rx_head, e, me_next);
+	mtx_unlock(&pip->pi_rx_lock);
+	*mp = NULL;
 }
 
 CAMLprim value
@@ -285,9 +275,10 @@ caml_get_mbufs(value id)
 	CAMLparam1(id);
 	CAMLlocal2(result, r);
 	struct plugged_if *pip;
-	struct mbuf_entry *e1, *e2;
+	struct mbuf_entry *e1;
+	struct mbuf_entry *e2;
 	struct mbuf *m;
-	long len;
+	struct mbuf *n;
 
 	result = Val_emptylist;
 
@@ -301,17 +292,20 @@ caml_get_mbufs(value id)
 	mtx_lock(&pip->pi_rx_lock);
 	e1 = LIST_FIRST(&pip->pi_rx_head);
 	while (e1 != NULL) {
-		m = e1->me_m;
-		len = m->m_len;
-		r = caml_alloc(2, 0);
-		Store_field(r, 0,
-		    caml_ba_alloc_dims(CAML_BA_UINT8 | CAML_BA_C_LAYOUT
-		    | CAML_BA_MBUF, 1, (void *) m, len));
-		Store_field(r, 1, result);
+		for (m = e1->me_m; m != NULL; m = m->m_nextpkt) {
+			for (n = m; n != NULL; n = n->m_next) {
+				r = caml_alloc(2, 0);
+				Store_field(r, 0,
+				    caml_ba_alloc_dims(CAML_BA_UINT8
+				    | CAML_BA_C_LAYOUT | CAML_BA_MBUF, 1,
+				    (void *) n, (long) n->m_len));
+				Store_field(r, 1, result);
+				result = r;
+			}
+		}
 		e2 = LIST_NEXT(e1, me_next);
 		free(e1, M_MIRAGE);
 		e1 = e2;
-		result = r;
 	}
 	LIST_INIT(&pip->pi_rx_head);
 	mtx_unlock(&pip->pi_rx_lock);
