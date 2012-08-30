@@ -41,7 +41,7 @@
 #include <net/if_dl.h>
 #include <net/if_types.h>
 #include <net/if_arp.h>
-#include <net/vnet.h>
+#include <net/ethernet.h>
 
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
@@ -56,6 +56,7 @@ struct mbuf_entry {
 
 struct plugged_if {
 	TAILQ_ENTRY(plugged_if)	pi_next;
+	struct ifnet		*pi_ifp;
 	u_short	pi_index;
 	u_short	pi_llindex;
 	int	pi_flags;
@@ -76,6 +77,7 @@ CAMLprim value caml_get_vifs(value v_unit);
 CAMLprim value caml_plug_vif(value id);
 CAMLprim value caml_unplug_vif(value id);
 CAMLprim value caml_get_mbufs(value id);
+CAMLprim value caml_put_mbufs(value id, value bufs);
 
 void netif_ether_input(struct ifnet *ifp, struct mbuf **mp);
 int  netif_ether_output(struct ifnet *ifp, struct mbuf **mp);
@@ -150,7 +152,7 @@ caml_plug_vif(value id)
 	pip = malloc(sizeof(struct plugged_if), M_MIRAGE, M_NOWAIT | M_ZERO);
 
 	if (pip == NULL)
-		caml_failwith("Out of memory");
+		caml_failwith("No memory for plugging a new interface");
 
 	found = 0;
 	IFNET_WLOCK();
@@ -159,6 +161,7 @@ caml_plug_vif(value id)
 		if (strncmp(ifp->if_xname, String_val(id), IFNAMSIZ) == 0) {
 			/* "Enable" the fake NetGraph node. */
 			IFP2AC(ifp)->ac_netgraph = (void *) 1;
+			pip->pi_ifp   = ifp;
 			pip->pi_index = ifp->if_index;
 			pip->pi_flags = ifp->if_flags;
 			bcopy(ifp->if_xname, pip->pi_xname, IFNAMSIZ);
@@ -227,7 +230,8 @@ caml_unplug_vif(value id)
 	}
 	IFNET_WUNLOCK();
 
-	mtx_lock(&pip->pi_rx_lock);
+	TAILQ_REMOVE(&pihead, pip, pi_next);
+
 	e1 = LIST_FIRST(&pip->pi_rx_head);
 	while (e1 != NULL) {
 		e2 = LIST_NEXT(e1, me_next);
@@ -236,10 +240,8 @@ caml_unplug_vif(value id)
 		e1 = e2;
 	}
 	LIST_INIT(&pip->pi_rx_head);
-	mtx_unlock(&pip->pi_rx_lock);
-
-	TAILQ_REMOVE(&pihead, pip, pi_next);
 	mtx_destroy(&pip->pi_rx_lock);
+
 	free(pip, M_MIRAGE);
 	plugged--;
 
@@ -313,12 +315,110 @@ caml_get_mbufs(value id)
 	CAMLreturn(result);
 }
 
-/* Generating outgoing Ethernet data. */
+/* This function is intentionally left blank. */
 int
 netif_ether_output(struct ifnet *ifp, struct mbuf **mp)
 {
-	if (plugged == 0)
-		return 0;
-
 	return 0;
+}
+
+static void
+netif_mbuf_free(void *p1, void *p2)
+{
+	u_int *u = (u_int *) p1;
+
+	/* u[0]: refcount */
+	if (--u[0] == 0) {
+		/* u[1]: data_size */
+		contigfree(p2, u[1], M_MIRAGE);
+		free(u, M_MIRAGE);
+	}
+}
+
+static struct mbuf *
+netif_map_to_mbuf(void *data, u_int *u)
+{
+	struct mbuf **mp;
+	struct mbuf *m;
+	struct mbuf *frag;
+	size_t frag_len;
+	char *p;
+
+	frag_len = u[1];
+	mp = &frag;
+	p = data;
+
+	while (frag_len > 0) {
+		MGET(m, M_DONTWAIT, MT_DATA);
+		if (m != NULL) {
+			m->m_flags       |= M_EXT;
+			m->m_ext.ext_type = EXT_EXTREF;
+			m->m_ext.ext_buf  = (void *) p;
+			m->m_ext.ext_free = netif_mbuf_free;
+			m->m_ext.ext_arg1 = u;
+			m->m_ext.ext_arg2 = data;
+			m->m_ext.ref_cnt  = &u[0];
+			m->m_len          = min(MCLBYTES, frag_len);
+			m->m_data         = m->m_ext.ext_buf;
+			*(m->m_ext.ref_cnt) += 1;
+		} else {
+			m_freem(frag);
+			return NULL;
+		}
+		frag_len -= m->m_len;
+		p += m->m_len;
+		*mp = m;
+		mp = &(m->m_next);
+	}
+
+	return frag;
+}
+
+CAMLprim value
+caml_put_mbufs(value id, value bufs)
+{
+	CAMLparam2(id, bufs);
+	CAMLlocal1(v);
+	struct plugged_if *pip;
+	struct mbuf **mp;
+	struct mbuf *frag;
+	struct mbuf *pkt;
+	struct caml_ba_array *b;
+	u_int *u;
+	size_t pkt_len;
+
+	if ((bufs == Val_emptylist) || (plugged == 0))
+		CAMLreturn(Val_unit);
+
+	pip = find_pi_by_index(Int_val(id));
+	if (pip == NULL)
+		CAMLreturn(Val_unit);
+
+	pkt_len = 0;
+	mp = &pkt;
+
+	while (bufs != Val_emptylist) {
+		v = Field(bufs, 0);
+		b = Caml_ba_array_val(v);
+		u = (u_int *) b->data2;
+		frag = netif_map_to_mbuf(b->data, u);
+		if (frag == NULL)
+			caml_failwith("No memory for mapping to mbuf");
+		*mp = frag;
+		mp = &(frag->m_next);
+		pkt_len += u[1];
+		bufs = Field(bufs, 1);
+	}
+
+	pkt->m_flags       |= M_PKTHDR;
+	pkt->m_pkthdr.len   = pkt_len;
+	pkt->m_pkthdr.rcvif = NULL;
+	SLIST_INIT(&pkt->m_pkthdr.tags);
+
+	if (pkt->m_pkthdr.len > pip->pi_ifp->if_mtu)
+		printf("%s: Packet is greater (%d) than the MTU (%ld)\n",
+		    pip->pi_xname, pkt->m_pkthdr.len, pip->pi_ifp->if_mtu);
+
+	ether_output_frame(pip->pi_ifp, pkt);
+	CAMLreturn(Val_unit);
 }

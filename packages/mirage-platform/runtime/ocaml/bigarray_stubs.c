@@ -204,6 +204,9 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   value res;
   struct caml_ba_array * b;
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
+#ifdef _KERNEL
+  u_int *u;
+#endif
 
   Assert(num_dims >= 1 && num_dims <= CAML_BA_MAX_NUM_DIMS);
   Assert((flags & CAML_BA_KIND_MASK) <= CAML_BA_COMPLEX64);
@@ -230,12 +233,17 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   b = Caml_ba_array_val(res);
 #ifdef _KERNEL
   if ((flags & CAML_BA_MANAGED_MASK) == CAML_BA_MBUF) {
-    b->m    = (struct mbuf *) data;
-    b->data = mtod(b->m, void *);
+    b->data2 = data;
+    b->data  = mtod((struct mbuf *) b->data2, void *);
   }
   else {
-    b->m    = NULL;
-    b->data = data;
+    b->data  = data;
+    b->data2 = __malloc(2 * sizeof(u_int));
+    if (b->data2 == NULL) caml_raise_out_of_memory();
+    u = (u_int *) b->data2;
+    for (u[1] = 0, i = 0; i < num_dims; i++)
+      u[1] += dim[i];
+    u[0] = 1;
   }
 #else
   b->data = data;
@@ -587,19 +595,22 @@ static void caml_ba_finalize(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
 #ifdef _KERNEL
-  int data_size, i;
+  u_int *u;
 #endif
 
   switch (b->flags & CAML_BA_MANAGED_MASK) {
   case CAML_BA_EXTERNAL:
     break;
   case CAML_BA_MANAGED:
+#ifdef _KERNEL
+    u = (u_int *) b->data2;
+#endif
     if (b->proxy == NULL) {
 #ifdef _KERNEL
-      data_size = 0;
-      for (i = 0; i < b->num_dims; i++)
-          data_size += b->dim[i];
-      contigfree(b->data, data_size, M_MIRAGE);
+      if (--u[0] == 0) {
+          contigfree(b->data, u[1], M_MIRAGE);
+          __free(u);
+      }
 #else
       free(b->data);
 #endif
@@ -608,7 +619,10 @@ static void caml_ba_finalize(value v)
             (int) b->proxy->refcount, 0, 0, 0);
       if (-- b->proxy->refcount == 0) {
 #ifdef _KERNEL
-        contigfree(b->proxy->data, b->proxy->size, M_MIRAGE);
+        if (--u[0] == 0) {
+            contigfree(b->proxy->data, b->proxy->size, M_MIRAGE);
+            __free(u);
+        }
 #else
         free(b->proxy->data);
 #endif
@@ -621,7 +635,7 @@ static void caml_ba_finalize(value v)
     break;
 #ifdef _KERNEL
   case CAML_BA_MBUF:
-    m_free(b->m);
+    m_free((struct mbuf *) b->data2);
     break;
 #endif
   }
@@ -961,8 +975,20 @@ static void caml_ba_update_proxy(struct caml_ba_array * b1,
                                  struct caml_ba_array * b2)
 {
   struct caml_ba_proxy * proxy;
+#ifdef _KERNEL
+  u_int *u;
+  int i;
+#endif
   /* Nothing to do for un-managed arrays */
   if ((b1->flags & CAML_BA_MANAGED_MASK) == CAML_BA_EXTERNAL) return;
+#ifdef _KERNEL
+  /* Update size information */
+  if ((b2->flags & CAML_BA_MANAGED_MASK) != CAML_BA_MBUF) {
+    u = (u_int *) b2->data2;
+    for (u[1] = 0, i = 0; i < b2->num_dims; i++)
+      u[1] += b2->dim[i];
+  }
+#endif
   if (b1->proxy != NULL) {
     /* If b1 is already a proxy for a larger array, increment refcount of
        proxy */

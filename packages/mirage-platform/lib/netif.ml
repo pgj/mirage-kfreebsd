@@ -41,6 +41,7 @@ external get_vifs: unit -> id list = "caml_get_vifs"
 external plug_vif: id -> bool * int * string = "caml_plug_vif"
 external unplug_vif: id -> unit = "caml_unplug_vif"
 external get_mbufs : int -> Io_page.t list = "caml_get_mbufs"
+external put_mbufs : int -> Io_page.t list -> unit = "caml_put_mbufs"
 
 let devices : (id, t) Hashtbl.t = Hashtbl.create 1
 
@@ -81,13 +82,11 @@ let create f =
     f id t) ids in
   th <?> pt
 
-let write ifc page =
-  Console.log (sprintf "Netif.write %s: not implemented yet" ifc.backend);
+let writev ifc bufs =
+  put_mbufs (ifc.backend_id) bufs;
   return ()
 
-let writev ifc pages =
-  Console.log (sprintf "Netif.writev %s: not implemented yet" ifc.backend);
-  return ()
+let write ifc buf = writev ifc [buf]
 
 let rx_poll ifc fn =
   let mbufs = get_mbufs ifc.backend_id in

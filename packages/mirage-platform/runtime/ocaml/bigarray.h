@@ -82,7 +82,7 @@ struct caml_ba_proxy {
 struct caml_ba_array {
   void * data;                /* Pointer to raw data */
 #ifdef _KERNEL
-  struct mbuf * m;            /* Encapsulating mbuf(9) or NULL */
+  void * data2;               /* Interoperating with mbuf(9) or NULL */
 #endif
   intnat num_dims;            /* Number of dimensions */
   intnat flags;  /* Kind of element array + memory layout + allocation status */

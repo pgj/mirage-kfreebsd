@@ -23,6 +23,16 @@ basic/netif:
 	echo "let _ = OS.Main.run (Netif.main ())" > main.ml
 	${MAKE} -f Makefile.kmod SRCS=netif.ml KMOD=mirage-basic-netif
 
+basic/arp:
+	ln -sf basic/arp.ml .
+	echo "let _ = OS.Main.run (Arp.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=arp.ml KMOD=mirage-basic-arp
+
+basic/ping:
+	ln -sf basic/ping.ml .
+	echo "let _ = OS.Main.run (Ping.main ())" > main.ml
+	${MAKE} -f Makefile.kmod SRCS=ping.ml KMOD=mirage-basic-ping
+
 basic/sleep:
 	ln -sf basic/sleep.ml .
 	echo "let _ = OS.Main.run (Sleep.main ())" > main.ml
