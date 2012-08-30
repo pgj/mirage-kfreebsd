@@ -23,34 +23,7 @@ external alloc_pages: int -> t = "caml_alloc_pages"
 
 let page_size = 4096
 
-let free_lists = Hashtbl.create 10
-
-let get_free_list pages_per_block : t Queue.t =
-  if not (Hashtbl.mem free_lists pages_per_block)
-    then Hashtbl.add free_lists pages_per_block (Queue.create ());
-  Hashtbl.find free_lists pages_per_block
-
-let alloc ~pages_per_block ~n_blocks =
-  let q = get_free_list pages_per_block in
-  for i = 0 to (n_blocks - 1) do
-    Queue.add (alloc_pages pages_per_block) q;
-  done
-
-let get ?(pages_per_block = 1) () =
-  let q = get_free_list pages_per_block in
-  let rec inner () =
-    try
-      let block = Queue.pop q in
-      let fin p = Queue.add p q in
-      Gc.finalise fin block;
-      block
-    with
-      Queue.Empty -> begin
-        alloc ~pages_per_block ~n_blocks:8;
-        inner ()
-      end
-  in
-  inner ()
+let get ?(pages_per_block = 1) () = alloc_pages pages_per_block
 
 let rec get_n ?(pages_per_block = 1) n = match n with
   | 0 -> []
