@@ -1,0 +1,9 @@
+<lib/*>: for-pack(Net), use_custom_stdlib, use_lwt, use_os, use_cstruct
+<lib/dhcp/*>: for-pack(Net.Dhcp), use_custom_stdlib, use_lwt, use_os, use_cstruct
+<lib/tcp/*>: for-pack(Net.Tcp), use_custom_stdlib, use_lwt, use_os, use_cstruct
+<lib/dhcp/dhcp.*>: for-repack(Net)
+<lib/tcp/tcp.*>: for-repack(Net)
+"lib": include
+"lib/tcp": include
+"lib/dhcp": include
+true: camlp4of
